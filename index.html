@@ -10,6 +10,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Great+Vibes&family=Playfair+Display:ital,wght@0,700;0,800;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- FontAwesome for crisp icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
+    <!-- Firebase SDKs (For Real SMS OTP when configured) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+
     <style>
         :root {
             --bg-cream: #F6E9D2;
@@ -59,7 +64,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(29, 17, 9, 0.75);
+            background: rgba(29, 17, 9, 0.78);
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
             z-index: 1000;
@@ -101,11 +106,11 @@
             right: 12px;
             background: #EAD4BD;
             border: none;
-            width: 30px;
-            height: 30px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             color: var(--brown-dark);
-            font-size: 14px;
+            font-size: 15px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -440,11 +445,16 @@
             gap: 10px;
             cursor: pointer;
             box-shadow: 0 6px 16px rgba(23, 52, 30, 0.3);
-            transition: transform 0.15s ease;
+            transition: transform 0.15s ease, opacity 0.2s ease;
         }
 
         .otp-btn:active {
             transform: scale(0.98);
+        }
+
+        .otp-btn:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
         }
 
         /* Dark Green Curved Wave Footer */
@@ -527,6 +537,9 @@
             transition: all 0.3s ease;
             z-index: 1100;
             white-space: nowrap;
+            max-width: 92vw;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .toast.show {
@@ -584,7 +597,7 @@
 <body>
 
 <div class="app-container">
-    <!-- Blur Modal Popup Backdrop -->
+    <!-- Blur Modal Popup Backdrop (Scratch Card & Offer Status) -->
     <div class="modal-backdrop" id="modalBackdrop">
         <div class="popup-modal">
             <button class="popup-close-btn" onclick="closeModal()">
@@ -600,7 +613,7 @@
             </div>
             
             <div id="scratchHint" style="font-size: 11px; color: #8A1118; font-weight: 700; margin-bottom: 6px;">👆 Scratch above to reveal your coupon!</div>
-            <div id="modalSubMessage" style="font-size: 12px; color: #331B0E; font-weight: 600; line-height: 1.4;">Show this unique code at the stall for Buy 1 Get 1 Free!</div>
+            <div id="modalSubMessage" style="font-size: 12px; color: #331B0E; font-weight: 600; line-height: 1.4;">Show this unique 5-letter code at the stall for Buy 1 Get 1 Free!</div>
         </div>
     </div>
 
@@ -680,7 +693,7 @@
             <!-- Right Tiramisu Slice Photo -->
             <div class="hero-right-visual">
                 <div class="dessert-bowl-frame">
-                    <img 
+                    <img id="heroDessertImg"
                         src="https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?auto=format&fit=crop&w=650&q=85" 
                         onerror="this.src='https://placehold.co/500x500/E2B34B/331B0E?text=Tiramisu+Slice'" 
                         alt="Tiramisu Sweet Dessert Slice">
@@ -715,13 +728,16 @@
                     <input type="tel" id="mobileInput" placeholder="10 Digit Mobile Number" maxlength="10" inputmode="numeric" oninput="resetOtpStep()">
                 </div>
 
-                <!-- Auto OTP Input Field (Hidden initially) -->
+                <!-- OTP Input Field -->
                 <div id="otpVerifySection" class="otp-verify-box" style="display: none;">
                     <div class="phone-input-box" style="border-color: #17341E; background: #F9FFF9;">
                         <i class="fa-solid fa-key" style="color: #17341E;"></i>
-                        <input type="tel" id="otpCodeInput" placeholder="Enter 4-Digit OTP" maxlength="4" inputmode="numeric">
+                        <input type="tel" id="otpCodeInput" placeholder="Enter OTP" maxlength="6" inputmode="numeric">
                     </div>
                 </div>
+
+                <!-- Invisible container for Firebase reCAPTCHA -->
+                <div id="recaptcha-container"></div>
 
                 <button class="otp-btn" id="otpSubmitBtn" onclick="handleOtpFlow()">
                     <span id="btnLabel">GET OTP</span>
@@ -764,16 +780,25 @@
             <button onclick="switchAdminTab(4)" class="admin-tab-btn" style="font-size: 11px; font-weight: 700; padding: 6px 12px; border: none; background: #EAD4BD; color: #331B0E; border-radius: 6px; cursor: pointer; white-space: nowrap;">Settings</button>
         </div>
 
-        <!-- Admin Body Content (Scrollable Full Screen) -->
+        <!-- Admin Body Content -->
         <div style="flex: 1; overflow-y: auto; padding-right: 4px;">
             <!-- Tab 0: Overview -->
             <div class="admin-tab-content" id="adminTab0">
-                <div style="font-size: 13px; font-weight: 600; color: #331B0E; line-height: 1.6; padding: 10px 0;">
-                    Welcome to Crumb Club Full Screen Admin Dashboard.<br><br>
-                    • Easily monitor active & redeemed customer offers in real-time.<br>
-                    • Update hero dessert image URL instantly.<br>
-                    • Secure passcode & fixed hidden admin bypass fully active.<br>
-                    • WhatsApp custom OTP text synced.
+                <div id="adminStatsSummary" style="display: flex; gap: 10px; margin-bottom: 16px;">
+                    <div style="flex:1; background:#FFF; border:1px solid #E2B34B; border-radius:12px; padding:12px; text-align:center;">
+                        <div style="font-size:11px; color:#331B0E; font-weight:700;">ACTIVE</div>
+                        <div id="statActiveCount" style="font-size:22px; color:#17341E; font-weight:800;">0</div>
+                    </div>
+                    <div style="flex:1; background:#FFF; border:1px solid #E2B34B; border-radius:12px; padding:12px; text-align:center;">
+                        <div style="font-size:11px; color:#331B0E; font-weight:700;">REDEEMED</div>
+                        <div id="statRedeemedCount" style="font-size:22px; color:#8A1118; font-weight:800;">0</div>
+                    </div>
+                </div>
+                <div style="font-size: 13px; font-weight: 600; color: #331B0E; line-height: 1.6; padding: 6px 0;">
+                    Welcome to Crumb Club Admin Dashboard.<br><br>
+                    • Monitor active & redeemed customer offers in real-time.<br>
+                    • Search 5-letter customer coupon codes in the <b>Redeem</b> tab.<br>
+                    • Connect Firebase Phone Auth in <b>Settings</b> for real SMS OTPs.
                 </div>
             </div>
 
@@ -788,9 +813,9 @@
             <!-- Tab 2: Redeem Manager -->
             <div class="admin-tab-content" id="adminTab2" style="display: none;">
                 <div style="margin-bottom: 12px;">
-                    <label style="font-size: 12px; font-weight: 700; color: #331B0E; display: block; margin-bottom: 6px;">Enter Coupon Code (e.g. K8M2P):</label>
-                    <input type="text" id="adminRedeemCode" placeholder="Enter 5-digit code..." style="width: 100%; padding: 10px 14px; border: 1px solid #E2B34B; border-radius: 8px; font-size: 13px; outline: none; text-transform: uppercase;">
-                    <button onclick="redeemCoupon()" style="margin-top: 10px; background: #8A1118; color: white; border: none; padding: 8px 18px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">Mark as Redeemed</button>
+                    <label style="font-size: 12px; font-weight: 700; color: #331B0E; display: block; margin-bottom: 6px;">Enter 5-Letter Coupon Code (e.g. K8M2P):</label>
+                    <input type="text" id="adminRedeemCode" placeholder="Enter 5-letter code..." style="width: 100%; padding: 10px 14px; border: 1px solid #E2B34B; border-radius: 8px; font-size: 13px; outline: none; text-transform: uppercase;">
+                    <button onclick="redeemCoupon()" style="margin-top: 10px; background: #8A1118; color: white; border: none; padding: 10px 18px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; width: 100%;">Verify & Mark as Redeemed</button>
                 </div>
             </div>
 
@@ -799,16 +824,23 @@
                 <div style="margin-bottom: 12px;">
                     <label style="font-size: 12px; font-weight: 700; color: #331B0E; display: block; margin-bottom: 6px;">Dessert Round Image URL:</label>
                     <input type="text" id="adminImgUrl" placeholder="Enter image URL..." style="width: 100%; padding: 10px 14px; border: 1px solid #E2B34B; border-radius: 8px; font-size: 13px; outline: none;">
-                    <button onclick="updateHeroImage()" style="margin-top: 10px; background: #17341E; color: white; border: none; padding: 8px 18px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">Update Image</button>
+                    <button onclick="updateHeroImage()" style="margin-top: 10px; background: #17341E; color: white; border: none; padding: 10px 18px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; width: 100%;">Update Image</button>
                 </div>
             </div>
 
-            <!-- Tab 4: Security Settings -->
+            <!-- Tab 4: Security & Firebase SMS Settings -->
             <div class="admin-tab-content" id="adminTab4" style="display: none;">
-                <div style="margin-bottom: 12px;">
+                <div style="margin-bottom: 16px; padding-bottom: 14px; border-bottom: 1px solid #E2B34B;">
                     <label style="font-size: 12px; font-weight: 700; color: #331B0E; display: block; margin-bottom: 6px;">Change Admin Password:</label>
                     <input type="password" id="newAdminPassInput" placeholder="New Password..." style="width: 100%; padding: 10px 14px; border: 1px solid #E2B34B; border-radius: 8px; font-size: 13px; outline: none;">
                     <button onclick="changeAdminPassword()" style="margin-top: 10px; background: #17341E; color: white; border: none; padding: 8px 18px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">Update Password</button>
+                </div>
+
+                <div>
+                    <label style="font-size: 12px; font-weight: 700; color: #331B0E; display: block; margin-bottom: 4px;">Firebase Config JSON (For Real SMS OTP):</label>
+                    <div style="font-size: 10.5px; color: #6B533B; margin-bottom: 6px;">Paste your Firebase Web Config JSON here to enable real SMS OTPs, or leave blank for Instant Demo OTP.</div>
+                    <textarea id="firebaseConfigInput" rows="5" placeholder='{"apiKey": "...", "authDomain": "...", "projectId": "...", "appId": "..."}' style="width: 100%; padding: 10px; border: 1px solid #E2B34B; border-radius: 8px; font-size: 11px; outline: none; font-family: monospace;"></textarea>
+                    <button onclick="saveFirebaseConfig()" style="margin-top: 8px; background: #17341E; color: white; border: none; padding: 8px 18px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">Save Firebase Config</button>
                 </div>
             </div>
 
@@ -821,22 +853,69 @@
 <div class="toast" id="toast"></div>
 
 <script>
+    // ==========================================
+    // 1. OPTIONAL DIRECT FIREBASE CONFIG
+    // ==========================================
+    // You can either paste your Firebase config below OR set it inside Admin -> Settings
+    const DEFAULT_FIREBASE_CONFIG = null; 
+    /* Example:
+    const DEFAULT_FIREBASE_CONFIG = {
+        apiKey: "AIzaSy...",
+        authDomain: "crumb-club.firebaseapp.com",
+        projectId: "crumb-club",
+        storageBucket: "crumb-club.appspot.com",
+        messagingSenderId: "123456789",
+        appId: "1:123456789:web:abcdef"
+    };
+    */
+
+    let firebaseConfirmationResult = null;
+    let recaptchaVerifierInstance = null;
+    let isFirebaseReady = false;
+
     let tapCount = 0;
     let tapTimer;
     let currentGeneratedOtp = null;
     let pendingPhone = null;
+    let toastTimeout;
 
-    // Check URL parameter ?admin=1 on page load
+    // Initialize App on Load
     window.addEventListener('DOMContentLoaded', () => {
+        // Load saved hero image if updated in admin
+        const savedImg = localStorage.getItem('crumbClubHeroImage');
+        if (savedImg) {
+            document.getElementById('heroDessertImg').src = savedImg;
+        }
+
+        // Initialize Firebase if configured
+        initFirebaseIfAvailable();
+
+        // Check URL parameter ?admin=1
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('admin') === '1') {
-            setTimeout(() => {
-                promptAdminLogin();
-            }, 300);
+            setTimeout(() => promptAdminLogin(), 300);
         }
     });
 
-    // Admin trigger listener (5 taps on Double Happiness)
+    function initFirebaseIfAvailable() {
+        try {
+            const savedConfigStr = localStorage.getItem('crumbClubFirebaseConfig');
+            const config = savedConfigStr ? JSON.parse(savedConfigStr) : DEFAULT_FIREBASE_CONFIG;
+            if (config && config.apiKey && window.firebase) {
+                if (!firebase.apps.length) {
+                    firebase.initializeApp(config);
+                }
+                isFirebaseReady = true;
+            }
+        } catch (err) {
+            console.warn('Firebase init skipped:', err);
+            isFirebaseReady = false;
+        }
+    }
+
+    // ==========================================
+    // 2. ADMIN PANEL LOGIC (5 Taps on Double Happiness)
+    // ==========================================
     document.getElementById('adminTrigger').addEventListener('click', () => {
         tapCount++;
         clearTimeout(tapTimer);
@@ -853,13 +932,15 @@
     }
 
     function promptAdminLogin() {
-        let pass = prompt("Enter Admin Passcode:");
+        const pass = prompt("Enter Admin Passcode:");
         if (pass === null) return;
         
         if (pass === getAdminPassword() || pass === '99856') {
             document.getElementById('adminModalBackdrop').classList.add('active');
+            const savedFb = localStorage.getItem('crumbClubFirebaseConfig');
+            if (savedFb) document.getElementById('firebaseConfigInput').value = savedFb;
             renderAdminCouponsList();
-            showToast('Full Screen Admin Panel Unlocked!');
+            showToast('Admin Control Panel Unlocked!');
         } else {
             showToast('Incorrect Passcode!');
         }
@@ -871,29 +952,48 @@
         }
         const buttons = document.querySelectorAll('.admin-tab-btn');
         buttons.forEach((btn, idx) => {
-            if (idx === tabIndex) {
-                btn.style.background = '#17341E';
-                btn.style.color = 'white';
-            } else {
-                btn.style.background = '#EAD4BD';
-                btn.style.color = '#331B0E';
-            }
+            btn.style.background = (idx === tabIndex) ? '#17341E' : '#EAD4BD';
+            btn.style.color = (idx === tabIndex) ? 'white' : '#331B0E';
         });
-        if (tabIndex === 1) renderAdminCouponsList();
+        if (tabIndex === 0 || tabIndex === 1) renderAdminCouponsList();
     }
 
     function changeAdminPassword() {
         const newPass = document.getElementById('newAdminPassInput').value.trim();
         if (newPass.length < 3) {
-            document.getElementById('adminMsg').textContent = 'Password must be at least 3 characters!';
-            document.getElementById('adminMsg').style.color = '#8A1118';
+            showAdminStatus('Password must be at least 3 characters!', true);
             return;
         }
         localStorage.setItem('crumbClubAdminPass', newPass);
         document.getElementById('newAdminPassInput').value = '';
-        document.getElementById('adminMsg').textContent = 'Admin password changed successfully!';
-        document.getElementById('adminMsg').style.color = '#17341E';
-        setTimeout(() => document.getElementById('adminMsg').textContent = '', 2500);
+        showAdminStatus('Admin password updated successfully!', false);
+    }
+
+    function saveFirebaseConfig() {
+        const raw = document.getElementById('firebaseConfigInput').value.trim();
+        if (!raw) {
+            localStorage.removeItem('crumbClubFirebaseConfig');
+            isFirebaseReady = false;
+            showAdminStatus('Firebase config cleared (Demo Mode Active).', false);
+            return;
+        }
+        try {
+            const parsed = JSON.parse(raw);
+            if (!parsed.apiKey) throw new Error('Missing apiKey');
+            localStorage.setItem('crumbClubFirebaseConfig', JSON.stringify(parsed));
+            initFirebaseIfAvailable();
+            showAdminStatus('Firebase Real SMS OTP saved! Reloading...', false);
+            setTimeout(() => location.reload(), 1200);
+        } catch (e) {
+            showAdminStatus('Invalid JSON format! Copy valid Firebase config JSON.', true);
+        }
+    }
+
+    function showAdminStatus(msg, isError) {
+        const el = document.getElementById('adminMsg');
+        el.textContent = msg;
+        el.style.color = isError ? '#8A1118' : '#17341E';
+        setTimeout(() => el.textContent = '', 3000);
     }
 
     function closeAdminModal() {
@@ -903,10 +1003,9 @@
     function updateHeroImage() {
         const url = document.getElementById('adminImgUrl').value.trim();
         if (url) {
-            document.querySelector('.dessert-bowl-frame img').src = url;
-            document.getElementById('adminMsg').textContent = 'Image updated successfully!';
-            document.getElementById('adminMsg').style.color = '#17341E';
-            setTimeout(() => document.getElementById('adminMsg').textContent = '', 2000);
+            document.getElementById('heroDessertImg').src = url;
+            localStorage.setItem('crumbClubHeroImage', url);
+            showAdminStatus('Image updated successfully!', false);
         }
     }
 
@@ -914,16 +1013,21 @@
         const claimed = getClaimedOffers();
         const container = document.getElementById('adminCouponsList');
         let html = '';
-        let count = 0;
+        let activeCount = 0;
+        let redeemedCount = 0;
+
         for (let phone in claimed) {
-            count++;
             let item = claimed[phone];
-            html += `<div style="padding: 6px 0; border-bottom: 1px solid #F5E5CE; display:flex; justify-content:space-between; align-items:center;">
+            if (item.redeemed) redeemedCount++; else activeCount++;
+            html += `<div style="padding: 8px 4px; border-bottom: 1px solid #F5E5CE; display:flex; justify-content:space-between; align-items:center;">
                 <span><b>${phone}</b>: <span style="color:#8A1118; font-weight:700;">${item.code}</span></span> 
-                <span>${item.redeemed ? '<span style="color:green; font-weight:bold;">Redeemed</span>' : '<span style="color:orange; font-weight:bold;">Active</span>'}</span>
+                <span>${item.redeemed ? '<span style="color:#8A1118; font-weight:800;">Redeemed</span>' : '<span style="color:#17341E; font-weight:800;">Active</span>'}</span>
             </div>`;
         }
-        container.innerHTML = count > 0 ? html : 'No coupons issued yet.';
+
+        document.getElementById('statActiveCount').textContent = activeCount;
+        document.getElementById('statRedeemedCount').textContent = redeemedCount;
+        container.innerHTML = (activeCount + redeemedCount) > 0 ? html : 'No coupons issued yet.';
     }
 
     function redeemCoupon() {
@@ -940,26 +1044,30 @@
 
         for (let phone in claimed) {
             let storedCode = claimed[phone].code.toUpperCase();
-            if (storedCode.includes(code)) {
+            if (storedCode.endsWith(code)) {
                 foundKey = phone;
                 break;
             }
         }
 
         if (foundKey) {
+            if (claimed[foundKey].redeemed) {
+                showAdminStatus('This coupon was ALREADY redeemed!', true);
+                return;
+            }
             claimed[foundKey].redeemed = true;
             localStorage.setItem('crumbClubClaimedOffers', JSON.stringify(claimed));
-            document.getElementById('adminMsg').textContent = 'Coupon successfully marked as redeemed!';
-            document.getElementById('adminMsg').style.color = '#17341E';
+            showAdminStatus(`Coupon (${claimed[foundKey].code}) marked as REDEEMED!`, false);
             codeInput.value = '';
             renderAdminCouponsList();
         } else {
-            document.getElementById('adminMsg').textContent = 'Invalid or non-existent coupon code!';
-            document.getElementById('adminMsg').style.color = '#8A1118';
+            showAdminStatus('Invalid or non-existent coupon code!', true);
         }
-        setTimeout(() => document.getElementById('adminMsg').textContent = '', 2500);
     }
 
+    // ==========================================
+    // 3. COUPON STORAGE & SCRATCH CARD LOGIC
+    // ==========================================
     function generateUniqueCode() {
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
         let code = '';
@@ -990,18 +1098,17 @@
         clearTimeout(toastTimeout);
         toast.textContent = message;
         toast.classList.add('show');
-        toastTimeout = setTimeout(() => toast.classList.remove('show'), 2800);
+        toastTimeout = setTimeout(() => toast.classList.remove('show'), 3000);
     }
-    let toastTimeout;
 
     function closeModal() {
         document.getElementById('modalBackdrop').classList.remove('active');
     }
 
     function resetOtpStep() {
-        // Reset OTP step if user edits the phone number
-        if (currentGeneratedOtp !== null) {
+        if (currentGeneratedOtp !== null || firebaseConfirmationResult !== null) {
             currentGeneratedOtp = null;
+            firebaseConfirmationResult = null;
             pendingPhone = null;
             document.getElementById('otpVerifySection').style.display = 'none';
             document.getElementById('otpCodeInput').value = '';
@@ -1010,8 +1117,7 @@
         }
     }
 
-    // Initialize Scratch Card Canvas
-    function initScratchCard(isAlreadyScratched) {
+    function initScratchCard(isAlreadyRevealed) {
         const canvas = document.getElementById('scratchCanvas');
         const hint = document.getElementById('scratchHint');
         const ctx = canvas.getContext('2d');
@@ -1019,7 +1125,7 @@
         canvas.style.opacity = '1';
         canvas.style.pointerEvents = 'auto';
 
-        if (isAlreadyScratched) {
+        if (isAlreadyRevealed) {
             canvas.style.display = 'none';
             hint.style.display = 'none';
             return;
@@ -1030,7 +1136,6 @@
         canvas.width = 240;
         canvas.height = 75;
 
-        // Gold Foil Gradient Cover
         const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
         grad.addColorStop(0, '#D4A037');
         grad.addColorStop(0.5, '#F5D782');
@@ -1038,7 +1143,6 @@
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Scratch Text Overlay
         ctx.fillStyle = '#331B0E';
         ctx.font = 'bold 14px "Plus Jakarta Sans", sans-serif';
         ctx.textAlign = 'center';
@@ -1097,32 +1201,33 @@
         codeDisplay.style.color = '#8A1118';
         subMsg.textContent = 'Show this 5-letter code at the stall for Buy 1 Get 1 Free!';
 
-        // Show scratch card for new claim; if already active, allow scratching or show directly
         initScratchCard(!isNew);
         document.getElementById('modalBackdrop').classList.add('active');
     }
 
-    function handleOtpFlow() {
+    // ==========================================
+    // 4. MAIN OTP & VERIFICATION FLOW
+    // ==========================================
+    async function handleOtpFlow() {
         const input = document.getElementById('mobileInput');
-        const val = input.value.trim();
+        const btn = document.getElementById('otpSubmitBtn');
+        const currentPhone = input.value.trim();
 
-        if (!/^\d{10}$/.test(val)) {
+        if (!/^\d{10}$/.test(currentPhone)) {
             showToast('Please enter a valid 10-digit mobile number');
             input.focus();
             return;
         }
 
-        const currentPhone = val;
         const claimed = getClaimedOffers();
 
-        // STEP 1: Check existing number status BEFORE generating OTP
+        // STEP 1: Check existing number status
         if (claimed[currentPhone]) {
             const item = claimed[currentPhone];
 
-            // If Admin already marked it as REDEEMED -> Block permanently
+            // Permanently blocked if already redeemed by shopkeeper
             if (item.redeemed) {
                 showToast('This offer was redeemed, this coupon was redeemed!');
-                // Also show clear redeemed alert modal so customer sees it clearly
                 document.getElementById('modalStatusBadge').textContent = 'COUPON ALREADY USED';
                 document.getElementById('modalStatusBadge').style.color = '#8A1118';
                 document.getElementById('modalCodeDisplay').textContent = 'REDEEMED';
@@ -1134,49 +1239,96 @@
                 return;
             }
 
-            // If STILL ACTIVE (not redeemed yet) -> Re-open their active coupon anytime they click GET OTP
+            // Still Active -> Re-display their coupon anytime
             showToast('Active coupon found! Displaying your offer.');
             openCouponPopup(item, false);
             return;
         }
 
-        // STEP 2: For a brand new number, send/auto-fill OTP first
-        if (!currentGeneratedOtp || pendingPhone !== currentPhone) {
+        // STEP 2: Send OTP (Firebase Real SMS if configured, else Instant Auto-OTP)
+        if (pendingPhone !== currentPhone) {
             pendingPhone = currentPhone;
-            currentGeneratedOtp = Math.floor(1000 + Math.random() * 9000).toString();
-
-            // Show OTP input box & auto-fill the OTP sent to that number
-            document.getElementById('otpVerifySection').style.display = 'block';
             const otpField = document.getElementById('otpCodeInput');
             otpField.value = '';
-            document.getElementById('otpHeading').textContent = `OTP Sent to +91 ${currentPhone}`;
-            document.getElementById('btnLabel').textContent = 'VERIFY OTP & SCRATCH';
 
-            showToast(`Auto OTP for ${currentPhone}: ${currentGeneratedOtp}`);
+            if (isFirebaseReady) {
+                try {
+                    btn.disabled = true;
+                    document.getElementById('btnLabel').textContent = 'SENDING SMS...';
 
-            // Simulate automatic SMS/OTP arrival onto the mobile number field
-            setTimeout(() => {
-                if (pendingPhone === currentPhone) {
-                    otpField.value = currentGeneratedOtp;
-                    showToast(`OTP ${currentGeneratedOtp} received automatically!`);
+                    if (!recaptchaVerifierInstance) {
+                        recaptchaVerifierInstance = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+                            size: 'invisible'
+                        });
+                    }
+
+                    const fullPhoneNumber = '+91' + currentPhone;
+                    firebaseConfirmationResult = await firebase.auth().signInWithPhoneNumber(fullPhoneNumber, recaptchaVerifierInstance);
+
+                    document.getElementById('otpVerifySection').style.display = 'block';
+                    document.getElementById('otpHeading').textContent = `Enter SMS OTP sent to +91 ${currentPhone}`;
+                    document.getElementById('btnLabel').textContent = 'VERIFY OTP & SCRATCH';
+                    showToast(`Real SMS OTP sent to +91 ${currentPhone}!`);
+                } catch (error) {
+                    console.error('Firebase SMS Error:', error);
+                    pendingPhone = null;
+                    showToast('SMS Error: ' + (error.message || 'Check Firebase setup'));
+                    document.getElementById('btnLabel').textContent = 'GET OTP';
+                } finally {
+                    btn.disabled = false;
                 }
-            }, 600);
+            } else {
+                // Instant Auto-OTP Mode (Works immediately without backend)
+                currentGeneratedOtp = Math.floor(1000 + Math.random() * 9000).toString();
+                document.getElementById('otpVerifySection').style.display = 'block';
+                document.getElementById('otpHeading').textContent = `OTP Sent to +91 ${currentPhone}`;
+                document.getElementById('btnLabel').textContent = 'VERIFY OTP & SCRATCH';
+
+                showToast(`Auto OTP for ${currentPhone}: ${currentGeneratedOtp}`);
+                setTimeout(() => {
+                    if (pendingPhone === currentPhone) {
+                        otpField.value = currentGeneratedOtp;
+                        showToast(`OTP ${currentGeneratedOtp} received automatically!`);
+                    }
+                }, 600);
+            }
             return;
         }
 
-        // STEP 3: Verify OTP and reveal Scratch Card Coupon
+        // STEP 3: Verify Entered OTP
         const enteredOtp = document.getElementById('otpCodeInput').value.trim();
-        if (enteredOtp !== currentGeneratedOtp) {
-            showToast('Invalid OTP! Please check the 4-digit OTP.');
+        if (!enteredOtp) {
+            showToast('Please enter the OTP code');
             return;
+        }
+
+        if (isFirebaseReady && firebaseConfirmationResult) {
+            try {
+                btn.disabled = true;
+                document.getElementById('btnLabel').textContent = 'VERIFYING...';
+                await firebaseConfirmationResult.confirm(enteredOtp);
+            } catch (err) {
+                btn.disabled = false;
+                document.getElementById('btnLabel').textContent = 'VERIFY OTP & SCRATCH';
+                showToast('Invalid SMS OTP! Please try again.');
+                return;
+            } finally {
+                btn.disabled = false;
+            }
+        } else {
+            if (enteredOtp !== currentGeneratedOtp) {
+                showToast('Invalid OTP! Please check the 4-digit OTP.');
+                return;
+            }
         }
 
         // Generate 5-letter unique code & save as Active
         const newCode = generateUniqueCode();
         saveClaimedOffer(currentPhone, newCode);
 
-        // Reset OTP UI state
+        // Reset OTP state
         currentGeneratedOtp = null;
+        firebaseConfirmationResult = null;
         pendingPhone = null;
         document.getElementById('otpVerifySection').style.display = 'none';
         document.getElementById('otpCodeInput').value = '';
