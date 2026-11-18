@@ -3,424 +3,874 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Digital Loyalty Card</title>
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- React & ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <!-- Babel for JSX -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-</head>
-<body class="bg-stone-50 text-stone-900 font-sans min-h-screen flex flex-col justify-between">
-    <div id="root"></div>
-
-    <script type="text/babel">
-        function App() {
-            const [view, setView] = React.useState('home'); 
-            const [mobile, setMobile] = React.useState('');
-            const [pin, setPin] = React.useState('');
-            const [mobileError, setMobileError] = React.useState('');
-            
-            const [secretInput, setSecretInput] = React.useState('');
-            const [adminPinConfig, setAdminPinConfig] = React.useState('99885656800');
-            const [currentAdminPassword, setCurrentAdminPassword] = React.useState('');
-            const [newAdminPassword, setNewAdminPassword] = React.useState('');
-
-            const [config, setConfig] = React.useState(() => {
-                const saved = localStorage.getItem('loyalty_master_config');
-                return saved ? JSON.parse(saved) : {
-                    brandName: "The Copper Skillet",
-                    heroBadgeText: "10 stamps = Free Reward",
-                    heroTitle: "Craft food, warm welcome — every visit counts.",
-                    heroSubtitle: "Collect a stamp on every visit, and your 10th one is on us.",
-                    logoUrl: "https://images.unsplash.com/photo-1550547660-d9450f859349?w=100&auto=format&fit=crop&q=80",
-                    heroBgUrl: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1200&auto=format&fit=crop&q=80",
-                    footerText: "© 2026 Digital Loyalty Card. All rights reserved."
-                };
-            });
-
-            const [customers, setCustomers] = React.useState(() => {
-                const saved = localStorage.getItem('loyalty_customers');
-                return saved ? JSON.parse(saved) : {};
-            });
-
-            const [searchTerm, setSearchTerm] = React.useState('');
-
-            React.useEffect(() => {
-                localStorage.setItem('loyalty_master_config', JSON.stringify(config));
-            }, [config]);
-
-            React.useEffect(() => {
-                localStorage.setItem('loyalty_customers', JSON.stringify(customers));
-            }, [customers]);
-
-            const validateMobile = (num) => {
-                const regex = /^[6-9]\d{9}$/;
-                return regex.test(num);
-            };
-
-            const handleCustomerLogin = (e) => {
-                e.preventDefault();
-                if (!validateMobile(mobile)) {
-                    setMobileError('Please enter a valid mobile number starting with 6, 7, 8, or 9.');
-                    return;
-                }
-                if (!pin || pin.length !== 4) {
-                    alert('Please enter a valid 4-digit PIN.');
-                    return;
-                }
-                setMobileError('');
-                
-                if (!customers[mobile]) {
-                    setCustomers(prev => ({
-                        ...prev,
-                        [mobile]: { pin: pin, stamps: 0, history: [] }
-                    }));
-                } else if (customers[mobile].pin !== pin) {
-                    alert('Incorrect PIN! Please try again.');
-                    return;
-                }
-                setView('userDashboard');
-            };
-
-            const updateStamps = (mob, delta) => {
-                setCustomers(prev => {
-                    const current = prev[mob] || { pin: '1234', stamps: 0, history: [] };
-                    const newStamps = Math.max(0, Math.min(10, current.stamps + delta));
-                    return {
-                        ...prev,
-                        [mob]: {
-                            ...current,
-                            stamps: newStamps,
-                            history: [...current.history, { date: new Date().toLocaleString(), delta }]
-                        }
-                    };
-                });
-            };
-
-            const resetCard = (mob) => {
-                setCustomers(prev => ({
-                    ...prev,
-                    [mob]: { ...prev[mob], stamps: 0, history: [...prev[mob].history, { date: new Date().toLocaleString(), delta: 'Reset' }] }
-                }));
-            };
-
-            const deleteCustomer = (mob) => {
-                if (confirm(`Are you sure you want to permanently delete ${mob}?`)) {
-                    setCustomers(prev => {
-                        const updated = { ...prev };
-                        delete updated[mob];
-                        return updated;
-                    });
-                }
-            };
-
-            const handleSecretLogin = () => {
-                if (secretInput === '7013557763') {
-                    setView('masterPanel');
-                    setSecretInput('');
-                } else if (secretInput === adminPinConfig) {
-                    setView('adminPanel');
-                    setSecretInput('');
-                } else {
-                    alert('Incorrect passcode!');
-                }
-            };
-
-            const handleUpdateAdminPassword = (e) => {
-                e.preventDefault();
-                if (currentAdminPassword !== adminPinConfig) {
-                    alert('Current admin password is incorrect!');
-                    return;
-                }
-                if (!newAdminPassword || newAdminPassword.length < 4) {
-                    alert('New password must be at least 4 digits.');
-                    return;
-                }
-                setAdminPinConfig(newAdminPassword);
-                setCurrentAdminPassword('');
-                setNewAdminPassword('');
-                alert('Admin password successfully updated!');
-            };
-
-            return (
-                <div className="min-h-screen flex flex-col justify-between bg-stone-100">
-                    <header className="bg-white border-b px-6 py-3 flex justify-between items-center shadow-sm">
-                        <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setView('home')}>
-                            <img src={config.logoUrl} alt="Logo" className="w-10 h-10 rounded-full object-cover border"/>
-                            <div>
-                                <span className="text-sm font-bold block text-stone-900">{config.brandName}</span>
-                                <span className="text-xs text-stone-500 block">Digital Loyalty Card</span>
-                            </div>
-                        </div>
-                        <div>
-                            <button 
-                                onClick={() => setView('loginModal')} 
-                                className="w-8 h-8 rounded-full bg-stone-900 text-white flex items-center justify-center font-bold text-xs hover:bg-stone-800 shadow transition"
-                                title="Admin Login"
-                            >
-                                A
-                            </button>
-                        </div>
-                    </header>
-
-                    <main className="flex-grow flex items-center justify-center p-4">
-                        {view === 'home' && (
-                            <div className="max-w-5xl w-full grid grid-cols-1 md:grid-cols-2 bg-white rounded-2xl shadow-xl overflow-hidden border border-stone-200">
-                                <div className="relative bg-stone-900 min-h-[300px] md:min-h-[500px] bg-cover bg-center flex flex-col justify-between p-8 text-white" style={{ backgroundImage: `url(${config.heroBgUrl})` }}>
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
-                                    <div className="relative z-10 flex items-center space-x-3">
-                                        <img src={config.logoUrl} alt="Logo" className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md"/>
-                                        <span className="font-bold text-lg tracking-wide">{config.brandName}</span>
-                                    </div>
-                                    <div className="relative z-10 space-y-3">
-                                        <div className="inline-block bg-orange-600 text-white text-xs font-bold px-3 py-1 rounded-full shadow">
-                                            {config.heroBadgeText}
-                                        </div>
-                                        <h1 className="text-2xl md:text-3xl font-extrabold leading-tight">{config.heroTitle}</h1>
-                                        <p className="text-stone-200 text-sm">{config.heroSubtitle}</p>
-                                    </div>
-                                </div>
-
-                                <div className="p-8 md:p-12 flex flex-col justify-center space-y-6 bg-white">
-                                    <div className="space-y-2">
-                                        <h2 className="text-2xl font-bold text-stone-900">Welcome Back</h2>
-                                        <p className="text-xs text-stone-500 leading-relaxed">
-                                            Enter your 10-digit mobile number and 4-digit PIN to open your loyalty card.
-                                        </p>
-                                    </div>
-
-                                    <form onSubmit={handleCustomerLogin} className="space-y-4">
-                                        <div className="space-y-1">
-                                            <label className="text-xs font-bold uppercase tracking-wider text-stone-600">Mobile Number</label>
-                                            <div className="relative">
-                                                <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-stone-400">📞</span>
-                                                <input 
-                                                    type="tel" 
-                                                    placeholder="10-digit mobile number" 
-                                                    value={mobile} 
-                                                    onChange={(e) => setMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                                                    className="w-full pl-10 pr-4 py-3 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition"
-                                                    maxLength="10"
-                                                    required
-                                                />
-                                            </div>
-                                            {mobileError && <span className="text-red-500 text-[11px] font-semibold px-1">{mobileError}</span>}
-                                        </div>
-
-                                        <div className="space-y-1">
-                                            <label className="text-xs font-bold uppercase tracking-wider text-stone-600">4-Digit PIN</label>
-                                            <input 
-                                                type="password" 
-                                                placeholder="Enter 4-digit PIN" 
-                                                value={pin} 
-                                                onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                                                className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition"
-                                                maxLength="4"
-                                                required
-                                            />
-                                        </div>
-
-                                        <button 
-                                            type="submit" 
-                                            className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-orange-500/20 transition flex items-center justify-center space-x-2 text-sm"
-                                        >
-                                            <span>View My Loyalty Card</span>
-                                            <span>→</span>
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        )}
-
-                        {view === 'loginModal' && (
-                            <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-xl space-y-5 border border-stone-200">
-                                <div className="flex justify-between items-center border-b pb-3">
-                                    <h2 className="text-lg font-bold text-stone-900">Admin Portal</h2>
-                                    <button onClick={() => setView('home')} className="text-xs font-semibold text-red-500 hover:underline">Back</button>
-                                </div>
-                                <p className="text-xs text-stone-500">Enter your secure passcode:</p>
-                                <input 
-                                    type="password" 
-                                    placeholder="Enter Passcode..." 
-                                    value={secretInput} 
-                                    onChange={(e) => setSecretInput(e.target.value)}
-                                    className="w-full p-3 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
-                                />
-                                <button onClick={handleSecretLogin} className="w-full bg-stone-900 hover:bg-stone-800 text-white p-3 rounded-xl font-bold text-sm transition">
-                                    Login
-                                </button>
-                            </div>
-                        )}
-
-                        {view === 'userDashboard' && customers[mobile] && (
-                            <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-stone-200">
-                                <div className="bg-gradient-to-r from-orange-600 to-amber-600 text-white p-6 relative">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div>
-                                            <h2 className="text-xl font-bold">My Loyalty Card</h2>
-                                            <p className="text-xs text-orange-100 mt-0.5">One stamp per visit — 10 stamps unlock your free reward.</p>
-                                        </div>
-                                        <button onClick={() => setView('home')} className="text-xs font-semibold bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg backdrop-blur-sm transition">
-                                            Switch User
-                                        </button>
-                                    </div>
-                                    <div className="space-y-2 mt-4">
-                                        <div className="flex justify-between text-xs font-semibold">
-                                            <span>{customers[mobile].stamps} / 10 stamps collected</span>
-                                            <span>{Math.round((customers[mobile].stamps / 10) * 100)}%</span>
-                                        </div>
-                                        <div className="w-full bg-black/20 h-2 rounded-full overflow-hidden">
-                                            <div className="bg-white h-full transition-all duration-500 rounded-full" style={{ width: `${(customers[mobile].stamps / 10) * 100}%` }}></div>
-                                        </div>
-                                        <p className="text-[11px] text-orange-100 pt-1">Account: {mobile}</p>
-                                    </div>
-                                </div>
-
-                                <div className="p-6 space-y-6 bg-white">
-                                    <div className="grid grid-cols-5 gap-3">
-                                        {[...Array(10)].map((_, idx) => {
-                                            const isStamped = idx < customers[mobile].stamps;
-                                            const isReward = idx === 9;
-                                            return (
-                                                <div 
-                                                    key={idx} 
-                                                    className={`h-14 rounded-xl flex items-center justify-center font-bold text-sm border transition-all ${
-                                                        isStamped 
-                                                            ? 'bg-amber-500 text-white border-amber-600 shadow-md shadow-amber-500/20 scale-105' 
-                                                            : 'bg-stone-50 text-stone-300 border-dashed border-stone-200'
-                                                    }`}
-                                                >
-                                                    {isReward && !isStamped ? '🎁' : isStamped ? '★' : idx + 1}
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                    <p className="text-[11px] text-center text-stone-400">
-                                        Show this card at the counter to collect your stamps!
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-
-                        {view === 'adminPanel' && (
-                            <div className="max-w-lg w-full bg-white p-6 rounded-2xl shadow-xl space-y-5 border border-stone-200">
-                                <div className="flex justify-between items-center border-b pb-3">
-                                    <h2 className="font-bold text-lg text-orange-600">Admin Panel</h2>
-                                    <button onClick={() => setView('home')} className="text-xs font-semibold text-red-500 hover:underline">Back to Home</button>
-                                </div>
-                                
-                                <input 
-                                    type="text" 
-                                    placeholder="Search mobile number..." 
-                                    value={searchTerm} 
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm"
-                                />
-
-                                <div className="space-y-3 max-h-64 overflow-y-auto pr-1">
-                                    {Object.keys(customers).length === 0 ? (
-                                        <p className="text-xs text-center text-stone-400 py-4">No customers found.</p>
-                                    ) : (
-                                        Object.keys(customers)
-                                            .filter(m => m.includes(searchTerm))
-                                            .map(m => (
-                                                <div key={m} className="p-3 border border-stone-200 rounded-xl bg-stone-50 flex flex-col space-y-2">
-                                                    <div className="flex justify-between items-center">
-                                                        <div>
-                                                            <span className="font-bold text-sm text-stone-800">{m}</span>
-                                                            <span className="text-xs text-stone-500 ml-2">(PIN: {customers[m].pin})</span>
-                                                        </div>
-                                                        <span className="bg-orange-100 text-orange-800 px-2 py-0.5 rounded text-xs font-bold">{customers[m].stamps}/10 Stamps</span>
-                                                    </div>
-                                                    <div className="grid grid-cols-4 gap-1.5 pt-1">
-                                                        <button onClick={() => updateStamps(m, 1)} className="bg-green-600 text-white py-1 rounded text-xs font-bold hover:bg-green-700">+ Stamp</button>
-                                                        <button onClick={() => updateStamps(m, -1)} className="bg-amber-600 text-white py-1 rounded text-xs font-bold hover:bg-amber-700">- Stamp</button>
-                                                        <button onClick={() => resetCard(m)} className="bg-orange-500 text-white py-1 rounded text-xs font-bold hover:bg-orange-600">Reset</button>
-                                                        <button onClick={() => deleteCustomer(m)} className="bg-red-600 text-white py-1 rounded text-xs font-bold hover:bg-red-700">Delete</button>
-                                                    </div>
-                                                </div>
-                                            ))
-                                    )}
-                                </div>
-
-                                <div className="border-t pt-4 space-y-3">
-                                    <h3 className="text-xs font-bold uppercase tracking-wider text-stone-600">Change Admin Password</h3>
-                                    <form onSubmit={handleUpdateAdminPassword} className="space-y-2">
-                                        <input 
-                                            type="password" 
-                                            placeholder="Current Admin Password" 
-                                            value={currentAdminPassword} 
-                                            onChange={(e) => setCurrentAdminPassword(e.target.value)}
-                                            className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs"
-                                            required
-                                        />
-                                        <input 
-                                            type="password" 
-                                            placeholder="New Admin Password (min 4 chars)" 
-                                            value={newAdminPassword} 
-                                            onChange={(e) => setNewAdminPassword(e.target.value)}
-                                            className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs"
-                                            required
-                                        />
-                                        <button type="submit" className="w-full bg-stone-900 text-white p-2.5 rounded-xl text-xs font-bold hover:bg-stone-800">
-                                            Update Password
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        )}
-
-                        {view === 'masterPanel' && (
-                            <div className="max-w-lg w-full bg-white p-6 rounded-2xl shadow-xl space-y-5 border border-stone-200">
-                                <div className="flex justify-between items-center border-b pb-3">
-                                    <h2 className="font-bold text-lg text-stone-900">Master Panel (Full Customization)</h2>
-                                    <button onClick={() => setView('home')} className="text-xs font-semibold text-red-500 hover:underline">Back</button>
-                                </div>
-                                <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
-                                    <div>
-                                        <label className="text-xs font-semibold text-stone-600">Brand Name</label>
-                                        <input type="text" value={config.brandName} onChange={(e) => setConfig({...config, brandName: e.target.value})} className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm"/>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-semibold text-stone-600">Logo Image URL</label>
-                                        <input type="text" value={config.logoUrl} onChange={(e) => setConfig({...config, logoUrl: e.target.value})} className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm"/>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-semibold text-stone-600">Hero Title</label>
-                                        <input type="text" value={config.heroTitle} onChange={(e) => setConfig({...config, heroTitle: e.target.value})} className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm"/>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-semibold text-stone-600">Hero Subtitle</label>
-                                        <input type="text" value={config.heroSubtitle} onChange={(e) => setConfig({...config, heroSubtitle: e.target.value})} className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm"/>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-semibold text-stone-600">Hero Badge Text</label>
-                                        <input type="text" value={config.heroBadgeText} onChange={(e) => setConfig({...config, heroBadgeText: e.target.value})} className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm"/>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-semibold text-stone-600">Hero Background Image URL</label>
-                                        <input type="text" value={config.heroBgUrl} onChange={(e) => setConfig({...config, heroBgUrl: e.target.value})} className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm"/>
-                                    </div>
-                                    <div>
-                                        <label className="text-xs font-semibold text-stone-600">Footer Text</label>
-                                        <input type="text" value={config.footerText} onChange={(e) => setConfig({...config, footerText: e.target.value})} className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm"/>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </main>
-
-                    <footer className="text-center p-4 text-xs text-stone-400 border-t bg-white">
-                        {config.footerText}
-                    </footer>
-                </div>
-            );
+    <title>Crumb Club - Sweet Dessert | Buy 1 Get 1 Free</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Great+Vibes&family=Playfair+Display:ital,wght@0,700;0,800;1,600&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for crisp icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        :root {
+            --bg-cream: #F6E9D2;
+            --bg-cream-light: #FCF5E8;
+            --brown-dark: #331B0E;
+            --green-royal: #17341E;
+            --gold-accent: #E2B34B;
+            --gold-soft: #F3D17A;
+            --crimson-script: #8A1118;
+            --card-surface: rgba(255, 250, 240, 0.88);
+            --border-gold: rgba(203, 157, 73, 0.35);
         }
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #1D1109;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        /* Mobile App Container */
+        .app-container {
+            width: 100%;
+            max-width: 440px;
+            background: radial-gradient(circle at 75% 28%, #FFFDF8 0%, #F7EBDA 45%, #EEDAB9 100%);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.55);
+        }
+
+        /* Blur Overlay for Popup Modal */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(29, 17, 9, 0.75);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            padding: 20px;
+        }
+
+        .modal-backdrop.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .popup-modal {
+            background: linear-gradient(135deg, #FFFDF8 0%, #FCEAD2 100%);
+            border: 2px solid var(--gold-accent);
+            border-radius: 24px;
+            padding: 28px 22px;
+            width: 100%;
+            max-width: 360px;
+            text-align: center;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+            transform: scale(0.85);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+        }
+
+        .modal-backdrop.active .popup-modal {
+            transform: scale(1);
+        }
+
+        .popup-close-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: #EAD4BD;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            color: var(--brown-dark);
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Subtle Botanical Leaf Watermarks */
+        .leaf-decor {
+            position: absolute;
+            pointer-events: none;
+            opacity: 0.22;
+            z-index: 1;
+        }
+        .leaf-top-left { top: 105px; left: -12px; width: 65px; }
+        .leaf-mid-left { top: 315px; left: -10px; width: 75px; }
+        .leaf-top-right { top: 95px; right: -10px; width: 85px; transform: scaleX(-1); }
+
+        /* Top Dark Brown Curved Header */
+        .top-header {
+            background-color: var(--brown-dark);
+            padding: 16px 22px 20px;
+            border-bottom-left-radius: 32px;
+            border-bottom-right-radius: 32px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            z-index: 10;
+            box-shadow: 0 6px 18px rgba(51, 27, 14, 0.25);
+        }
+
+        .brand-lockup {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-bowl-icon {
+            width: 44px;
+            height: 44px;
+            stroke: var(--gold-accent);
+        }
+
+        .brand-words {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-script {
+            font-family: 'Cinzel', serif;
+            font-size: 24px;
+            font-weight: 700;
+            color: #FCE9C5;
+            line-height: 1;
+            letter-spacing: 1px;
+        }
+
+        .brand-sub {
+            font-size: 8.5px;
+            font-weight: 700;
+            letter-spacing: 2.8px;
+            color: var(--gold-accent);
+            text-transform: uppercase;
+            margin-top: 3px;
+            padding-left: 2px;
+        }
+
+        /* Traditional Taste Divider */
+        .tagline-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 20px 6px;
+            position: relative;
+            z-index: 5;
+        }
+
+        .tagline-divider::before,
+        .tagline-divider::after {
+            content: '';
+            height: 1px;
+            flex: 1;
+            background: linear-gradient(to right, transparent, #C69B53, transparent);
+        }
+
+        .tagline-text {
+            font-size: 9.5px;
+            font-weight: 700;
+            letter-spacing: 1.6px;
+            color: var(--brown-dark);
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        /* Hero Showcase Section */
+        .hero-section {
+            position: relative;
+            padding: 8px 18px 14px;
+            display: flex;
+            align-items: center;
+            min-height: 285px;
+            z-index: 4;
+        }
+
+        .hero-left {
+            width: 55%;
+            z-index: 6;
+            padding-left: 4px;
+        }
+
+        .special-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(180deg, #F6D884 0%, #E7BE5B 100%);
+            color: var(--brown-dark);
+            font-size: 9.5px;
+            font-weight: 800;
+            letter-spacing: 0.8px;
+            padding: 5px 12px;
+            border-radius: 50px;
+            box-shadow: 0 3px 8px rgba(182, 134, 38, 0.25);
+            margin-bottom: 10px;
+        }
+
+        .special-pill i {
+            color: #B47B19;
+            font-size: 8px;
+        }
+
+        .hero-headline {
+            font-family: 'Playfair Display', serif;
+            font-size: 46px;
+            font-weight: 800;
+            color: var(--green-royal);
+            line-height: 0.94;
+            letter-spacing: -1px;
+        }
+
+        .free-script-wrap {
+            position: relative;
+            display: inline-block;
+            margin-top: -4px;
+            margin-bottom: 6px;
+        }
+
+        .free-script {
+            font-family: 'Great Vibes', cursive;
+            font-size: 68px;
+            color: var(--crimson-script);
+            line-height: 0.85;
+            display: block;
+            transform: rotate(-4deg);
+            padding-right: 10px;
+        }
+
+        .gold-swash {
+            width: 145px;
+            height: 14px;
+            margin-top: -6px;
+            display: block;
+        }
+
+        .hero-desc {
+            font-size: 12.5px;
+            line-height: 1.45;
+            color: var(--brown-dark);
+            font-weight: 500;
+            margin-top: 6px;
+        }
+
+        .heart-divider {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 12px;
+            width: 145px;
+        }
+
+        .heart-divider span {
+            height: 1px;
+            flex: 1;
+            background-color: #C8973E;
+        }
+
+        .heart-divider i {
+            color: #C8973E;
+            font-size: 11px;
+        }
+
+        /* Dessert Visual on Right - Smaller frame & focused zoom on sweet */
+        .hero-right-visual {
+            position: absolute;
+            right: -15px;
+            top: 32px;
+            width: 220px;
+            height: 220px;
+            z-index: 3;
+            pointer-events: none;
+        }
+
+        .dessert-bowl-frame {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            padding: 6px;
+            background: radial-gradient(circle, rgba(235, 193, 108, 0.55) 0%, rgba(235, 193, 108, 0.1) 70%);
+            box-shadow: -10px 14px 24px rgba(51, 27, 14, 0.28);
+            overflow: hidden;
+        }
+
+        .dessert-bowl-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            border: 3.5px solid #D6A449;
+            transform: scale(1.35); /* Zoomed in closer directly on the sweet */
+            transform-origin: center center;
+        }
+
+        /* Three Feature Strip Card */
+        .features-strip {
+            margin: 4px 16px 12px;
+            background: var(--card-surface);
+            border: 1px solid var(--border-gold);
+            border-radius: 16px;
+            padding: 12px 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 6px 16px rgba(51, 27, 14, 0.06);
+            position: relative;
+            z-index: 6;
+        }
+
+        .feature-item {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            padding: 0 4px;
+        }
+
+        .feature-item:not(:last-child) {
+            border-right: 1px solid rgba(198, 155, 83, 0.4);
+        }
+
+        .feature-item i.fa-gem { color: var(--brown-dark); font-size: 20px; }
+        .feature-item i.fa-gift { color: var(--crimson-script); font-size: 20px; }
+        .feature-item i.fa-face-smile { color: var(--brown-dark); font-size: 20px; }
+
+        .feature-label {
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--crimson-script);
+            line-height: 1.2;
+            text-align: center;
+        }
+
+        /* Mobile Number & OTP Card */
+        .otp-card {
+            margin: 0 16px 16px;
+            background: var(--card-surface);
+            border: 1px solid var(--border-gold);
+            border-radius: 20px;
+            padding: 16px 18px 18px;
+            text-align: center;
+            box-shadow: 0 8px 22px rgba(51, 27, 14, 0.08);
+            position: relative;
+            z-index: 6;
+        }
+
+        .otp-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--brown-dark);
+            margin-bottom: 12px;
+        }
+
+        .phone-input-box {
+            background: #FFFFFF;
+            border: 1.5px solid #E3D3B8;
+            border-radius: 50px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            padding: 0 18px;
+            margin-bottom: 12px;
+            transition: border-color 0.2s;
+        }
+
+        .phone-input-box:focus-within {
+            border-color: var(--green-royal);
+        }
+
+        .phone-input-box i {
+            color: var(--brown-dark);
+            font-size: 16px;
+            margin-right: 12px;
+        }
+
+        .phone-input-box input {
+            border: none;
+            outline: none;
+            width: 100%;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--brown-dark);
+            background: transparent;
+        }
+
+        .phone-input-box input::placeholder {
+            color: #9E9488;
+            font-weight: 500;
+        }
+
+        .otp-btn {
+            width: 100%;
+            height: 50px;
+            background: linear-gradient(180deg, #1E4226 0%, #122A17 100%);
+            color: #FFFFFF;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            box-shadow: 0 6px 16px rgba(23, 52, 30, 0.3);
+            transition: transform 0.15s ease;
+        }
+
+        .otp-btn:active {
+            transform: scale(0.98);
+        }
+
+        /* Dark Green Curved Wave Footer */
+        .footer-wave-wrap {
+            position: relative;
+            margin-top: auto;
+            padding-top: 14px;
+        }
+
+        .footer-svg-wave {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 28px;
+            display: block;
+        }
+
+        .royal-footer {
+            background-color: var(--green-royal);
+            padding: 14px 16px 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .footer-script {
+            font-family: 'Cinzel', serif;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--gold-accent);
+            line-height: 1;
+            margin-bottom: 6px;
+            letter-spacing: 1px;
+        }
+
+        .footer-motto {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 1.6px;
+            color: #FCE9C5;
+            text-transform: uppercase;
+        }
+
+        .footer-motto::before,
+        .footer-motto::after {
+            content: '';
+            height: 1px;
+            width: 24px;
+            background-color: var(--gold-accent);
+            opacity: 0.7;
+        }
+
+        .provided-by {
+            font-size: 10px;
+            font-weight: 500;
+            color: rgba(252, 233, 197, 0.72);
+            margin-top: 8px;
+            letter-spacing: 0.6px;
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: var(--brown-dark);
+            color: #FCE9C5;
+            border: 1px solid var(--gold-accent);
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 12.5px;
+            font-weight: 600;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            z-index: 1100;
+            white-space: nowrap;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <!-- Blur Modal Popup Backdrop -->
+    <div class="modal-backdrop" id="modalBackdrop">
+        <div class="popup-modal">
+            <button class="popup-close-btn" onclick="closeModal()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div id="modalStatusBadge" style="font-size: 11px; font-weight: 800; color: #17341E; letter-spacing: 0.8px; margin-bottom: 6px;">STALL OFFER UNLOCKED!</div>
+            <div style="font-family: 'Cinzel', serif; font-size: 20px; font-weight: 700; color: #331B0E; margin-bottom: 4px;">Crumb Club</div>
+            <div id="modalCodeDisplay" style="font-size: 26px; font-weight: 800; color: #8A1118; letter-spacing: 2px; margin: 12px 0; background: #FFF4E6; padding: 10px; border-radius: 12px; border: 1.5px dashed #E2B34B;">-----</div>
+            <div id="modalSubMessage" style="font-size: 12px; color: #331B0E; font-weight: 600; line-height: 1.4;">Show this unique code at the stall for Buy 1 Get 1 Free!</div>
+        </div>
+    </div>
+
+    <!-- Decorative Botanical Leaves -->
+    <svg class="leaf-decor leaf-top-left" viewBox="0 0 80 120" fill="#B59B6D">
+        <path d="M10,110 Q40,60 15,10 Q55,45 45,110 Z"/>
+        <path d="M25,95 Q65,70 60,30 Q75,70 40,105 Z"/>
+    </svg>
+    <svg class="leaf-decor leaf-mid-left" viewBox="0 0 80 120" fill="#B59B6D">
+        <path d="M10,110 Q40,60 15,10 Q55,45 45,110 Z"/>
+        <path d="M25,95 Q65,70 60,30 Q75,70 40,105 Z"/>
+    </svg>
+    <svg class="leaf-decor leaf-top-right" viewBox="0 0 80 120" fill="#B59B6D">
+        <path d="M10,110 Q40,60 15,10 Q55,45 45,110 Z"/>
+    </svg>
+
+    <div>
+        <!-- Dark Brown Top Header -->
+        <header class="top-header">
+            <div class="brand-lockup">
+                <!-- Golden Layered Tiramisu Slice Outline SVG -->
+                <svg class="brand-bowl-icon" viewBox="0 0 64 64" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <ellipse cx="32" cy="51" rx="26" ry="5"/>
+                    <polygon points="14,26 36,16 52,24 30,34"/>
+                    <polyline points="14,26 14,45 30,51 52,41 52,24"/>
+                    <line x1="30" y1="34" x2="30" y2="51"/>
+                    <polyline points="14,32 30,40 52,30"/>
+                    <polyline points="14,39 30,46 52,36"/>
+                    <circle cx="31" cy="24" r="1" fill="#E2B34B"/>
+                    <circle cx="37" cy="22" r="1" fill="#E2B34B"/>
+                    <circle cx="26" cy="26" r="1" fill="#E2B34B"/>
+                </svg>
+                <div class="brand-words">
+                    <span class="brand-script">Crumb Club</span>
+                    <span class="brand-sub">SWEET DESSERT</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Traditional Taste Divider -->
+        <div class="tagline-divider">
+            <span class="tagline-text">TIRAMISU SWEET</span>
+        </div>
+
+        <!-- Hero Showcase Section -->
+        <section class="hero-section">
+            <div class="hero-left">
+                <div class="special-pill">
+                    <i class="fa-solid fa-star"></i>
+                    <span>SPECIAL STALL OFFER</span>
+                    <i class="fa-solid fa-star"></i>
+                </div>
+
+                <h1 class="hero-headline">
+                    Buy 1<br>Get 1
+                </h1>
+
+                <div class="free-script-wrap">
+                    <span class="free-script">free.</span>
+                    <svg class="gold-swash" viewBox="0 0 160 18" fill="none">
+                        <path d="M4 14C48 4 115 2 154 11C157 12 155 15 151 14C112 6 48 8 6 16C3 16 2 14 4 14Z" fill="#DFB04A"/>
+                    </svg>
+                </div>
+
+                <p class="hero-desc">
+                    Indulge in the rich taste<br>
+                    of Tiramisu, now with<br>
+                    an amazing offer!
+                </p>
+
+                <div class="heart-divider">
+                    <span></span>
+                    <i class="fa-solid fa-heart"></i>
+                    <span></span>
+                </div>
+            </div>
+
+            <!-- Right Tiramisu Slice Photo (Zoomed & Adjusted Size) -->
+            <div class="hero-right-visual">
+                <div class="dessert-bowl-frame">
+                    <img 
+                        src="https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?auto=format&fit=crop&w=650&q=85" 
+                        onerror="this.src='https://placehold.co/500x500/E2B34B/331B0E?text=Tiramisu+Slice'" 
+                        alt="Tiramisu Sweet Dessert Slice">
+                </div>
+            </div>
+        </section>
+
+        <!-- Three Feature Strip -->
+        <section class="features-strip">
+            <div class="feature-item">
+                <i class="fa-regular fa-gem"></i>
+                <div class="feature-label">Premium<br>Quality</div>
+            </div>
+            <!-- Tapping 5 times on Double Happiness opens Admin Panel -->
+            <div class="feature-item" id="adminTrigger" style="cursor: pointer;" title="Tap 5 times for Admin">
+                <i class="fa-solid fa-gift"></i>
+                <div class="feature-label">Double<br>Happiness</div>
+            </div>
+            <div class="feature-item">
+                <i class="fa-regular fa-face-smile"></i>
+                <div class="feature-label">Offer For<br>New Customers</div>
+            </div>
+        </section>
+
+        <!-- Mobile Number & Get OTP Card -->
+        <section class="otp-card">
+            <h2 class="otp-title" id="otpHeading">Enter Your Mobile Number</h2>
+
+            <div id="otpForm">
+                <div class="phone-input-box">
+                    <i class="fa-solid fa-phone"></i>
+                    <input type="tel" id="mobileInput" placeholder="10 Digit Mobile Number" maxlength="10" inputmode="numeric">
+                </div>
+
+                <button class="otp-btn" id="otpSubmitBtn" onclick="handleOtpFlow()">
+                    <span id="btnLabel">Get OTP</span>
+                    <i class="fa-solid fa-chevron-right" style="font-size: 13px;"></i>
+                </button>
+            </div>
+        </section>
+    </div>
+
+    <!-- Dark Green Curved Wave Footer -->
+    <div class="footer-wave-wrap">
+        <svg class="footer-svg-wave" viewBox="0 0 440 30" preserveAspectRatio="none">
+            <path d="M0,18 Q110,0 220,14 T440,8 L440,30 L0,30 Z" fill="#17341E"/>
+            <path d="M0,18 Q110,0 220,14 T440,8" fill="none" stroke="#DFB04A" stroke-width="2"/>
+        </svg>
+        <footer class="royal-footer">
+            <div class="footer-script">Crumb Club</div>
+            <div class="footer-motto">SWEET MOMENTS. TWICE THE HAPPINESS.</div>
+            <div class="provided-by">Provided by Karthik</div>
+        </footer>
+    </div>
+</div>
+
+<!-- Admin Panel Modal -->
+<div class="modal-backdrop" id="adminModalBackdrop">
+    <div class="popup-modal" style="text-align: left;">
+        <button class="popup-close-btn" onclick="closeAdminModal()">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+        <div style="font-family: 'Cinzel', serif; font-size: 18px; font-weight: 700; color: #331B0E; margin-bottom: 12px; text-align: center;">Admin Panel</div>
+        
+        <div style="margin-bottom: 12px;">
+            <label style="font-size: 11px; font-weight: 700; color: #331B0E; display: block; margin-bottom: 4px;">Dessert Round Image URL:</label>
+            <input type="text" id="adminImgUrl" placeholder="Enter image URL..." style="width: 100%; padding: 8px 12px; border: 1px solid #E2B34B; border-radius: 8px; font-size: 12px; outline: none;">
+            <button onclick="updateHeroImage()" style="margin-top: 6px; background: #17341E; color: white; border: none; padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">Update Image</button>
+        </div>
+
+        <div style="border-top: 1px solid #E2B34B; padding-top: 10px; margin-top: 10px;">
+            <label style="font-size: 11px; font-weight: 700; color: #331B0E; display: block; margin-bottom: 4px;">Redeem Coupon Code:</label>
+            <input type="text" id="adminRedeemCode" placeholder="Enter 5-digit coupon..." style="width: 100%; padding: 8px 12px; border: 1px solid #E2B34B; border-radius: 8px; font-size: 12px; outline: none; text-transform: uppercase;">
+            <button onclick="redeemCoupon()" style="margin-top: 6px; background: #8A1118; color: white; border: none; padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">Mark as Redeemed</button>
+        </div>
+        <div id="adminMsg" style="font-size: 11px; font-weight: 700; margin-top: 8px; text-align: center; color: #17341E;"></div>
+    </div>
+</div>
+
+<!-- Notification Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+    let otpSent = false;
+    let currentPhone = '';
+    let toastTimeout;
+    let tapCount = 0;
+    let tapTimer;
+
+    // Admin trigger listener (5 taps)
+    document.getElementById('adminTrigger').addEventListener('click', () => {
+        tapCount++;
+        clearTimeout(tapTimer);
+        if (tapCount >= 5) {
+            tapCount = 0;
+            document.getElementById('adminModalBackdrop').classList.add('active');
+            showToast('Admin Panel Unlocked!');
+        } else {
+            tapTimer = setTimeout(() => { tapCount = 0; }, 1000);
+        }
+    });
+
+    function closeAdminModal() {
+        document.getElementById('adminModalBackdrop').classList.remove('active');
+    }
+
+    function updateHeroImage() {
+        const url = document.getElementById('adminImgUrl').value.trim();
+        if (url) {
+            document.querySelector('.dessert-bowl-frame img').src = url;
+            document.getElementById('adminMsg').textContent = 'Image updated successfully!';
+            setTimeout(() => document.getElementById('adminMsg').textContent = '', 2000);
+        }
+    }
+
+    function redeemCoupon() {
+        const codeInput = document.getElementById('adminRedeemCode');
+        const code = codeInput.value.trim().toUpperCase();
+        if (!code) return;
+
+        let claimed = getClaimedOffers();
+        let found = false;
+        for (let phone in claimed) {
+            if (claimed[phone].code === code) {
+                claimed[phone].redeemed = true;
+                found = true;
+                break;
+            }
+        }
+
+        if (found) {
+            localStorage.setItem('crumbClubClaimedOffers', JSON.stringify(claimed));
+            document.getElementById('adminMsg').textContent = 'Coupon successfully redeemed!';
+            document.getElementById('adminMsg').style.color = '#17341E';
+            codeInput.value = '';
+        } else {
+            document.getElementById('adminMsg').textContent = 'Invalid or not found coupon code!';
+            document.getElementById('adminMsg').style.color = '#8A1118';
+        }
+        setTimeout(() => document.getElementById('adminMsg').textContent = '', 2500);
+    }
+
+    // Generate unique random 5-character alphanumeric code
+    function generateUniqueCode() {
+        const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        let code = '';
+        for (let i = 0; i < 5; i++) {
+            code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return 'Crumb Club - ' + code;
+    }
+
+    function getClaimedOffers() {
+        try {
+            return JSON.parse(localStorage.getItem('crumbClubClaimedOffers') || '{}');
+        } catch (e) {
+            return {};
+        }
+    }
+
+    function saveClaimedOffer(phone, code) {
+        try {
+            const data = getClaimedOffers();
+            data[phone] = { code: code, redeemed: true }; // Marked as redeemed or claimed
+            localStorage.setItem('crumbClubClaimedOffers', JSON.stringify(data));
+        } catch (e) {}
+    }
+
+    function showToast(message) {
+        const toast = document.getElementById('toast');
+        clearTimeout(toastTimeout);
+        toast.textContent = message;
+        toast.classList.add('show');
+        toastTimeout = setTimeout(() => toast.classList.remove('show'), 2800);
+    }
+
+    function closeModal() {
+        document.getElementById('modalBackdrop').classList.remove('active');
+    }
+
+    function handleOtpFlow() {
+        const input = document.getElementById('mobileInput');
+        const val = input.value.trim();
+
+        if (!otpSent) {
+            if (!/^\d{10}$/.test(val)) {
+                showToast('Please enter a valid 10-digit mobile number');
+                input.focus();
+                return;
+            }
+
+            currentPhone = val;
+            const claimed = getClaimedOffers();
+
+            if (claimed[currentPhone]) {
+                // If already claimed/redeemed by this customer number
+                document.getElementById('modalStatusBadge').textContent = 'THIS OFFER IS CLAIMED BY THIS CUSTOMER!';
+                document.getElementById('modalStatusBadge').style.color = '#8A1118';
+                document.getElementById('modalCodeDisplay').textContent = claimed[currentPhone].code;
+                document.getElementById('modalCodeDisplay').style.color = '#8A1118';
+                document.getElementById('modalSubMessage').textContent = 'This mobile number has already claimed and used the Crumb Club offer.';
+                document.getElementById('modalBackdrop').classList.add('active');
+                showToast('Offer already claimed for this number!');
+                return;
+            }
+
+            otpSent = true;
+            document.getElementById('otpHeading').textContent = 'Enter Crumb Club Offer OTP Sent to ' + val;
+            input.value = '';
+            input.placeholder = 'Enter 4-Digit OTP (e.g. 1234)';
+            input.maxLength = 4;
+            document.getElementById('btnLabel').textContent = 'Verify & Claim Offer';
+            showToast('Crumb Club Offer OTP sent to +91 ' + val);
+        } else {
+            if (!/^\d{4}$/.test(val)) {
+                showToast('Please enter the 4-digit OTP');
+                input.focus();
+                return;
+            }
+
+            const uniqueCode = generateUniqueCode();
+            saveClaimedOffer(currentPhone, uniqueCode);
+
+            // Show popup modal with blur background
+            document.getElementById('modalStatusBadge').textContent = 'STALL OFFER UNLOCKED!';
+            document.getElementById('modalStatusBadge').style.color = '#17341E';
+            document.getElementById('modalCodeDisplay').textContent = uniqueCode;
+            document.getElementById('modalCodeDisplay').style.color = '#8A1118';
+            document.getElementById('modalSubMessage').textContent = 'Show this unique code at the stall for Buy 1 Get 1 Free!';
+            document.getElementById('modalBackdrop').classList.add('active');
+
+            // Reset form state
+            otpSent = false;
+            document.getElementById('otpHeading').textContent = 'Enter Your Mobile Number';
+            input.value = '';
+            input.placeholder = '10 Digit Mobile Number';
+            input.maxLength = 10;
+            document.getElementById('btnLabel').textContent = 'Get OTP';
+            showToast('Stall Offer Unlocked Successfully!');
+        }
+    }
+</script>
+
 </body>
 </html>
