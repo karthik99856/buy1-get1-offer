@@ -547,40 +547,29 @@
             transform: translateX(-50%) translateY(0);
         }
 
-        /* Scratch Card & OTP Verification Styles */
-        .scratch-container {
-            position: relative;
-            width: 240px;
-            height: 75px;
-            margin: 14px auto;
-            border-radius: 14px;
-            overflow: hidden;
-            border: 2px dashed var(--gold-accent);
-            background: #FFF4E6;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            user-select: none;
-        }
-
-        .scratch-code-text {
-            font-size: 24px;
+        /* Direct Coupon Display Box & Redeemed Inline Notice */
+        .direct-code-box {
+            font-size: 26px;
             font-weight: 800;
             color: var(--crimson-script);
             letter-spacing: 2px;
-            z-index: 1;
+            margin: 14px 0;
+            background: #FFF4E6;
+            padding: 12px 10px;
+            border-radius: 14px;
+            border: 2px dashed var(--gold-accent);
         }
 
-        #scratchCanvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 2;
-            cursor: pointer;
-            touch-action: none;
-            transition: opacity 0.4s ease;
+        .redeemed-inline-msg {
+            display: none;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--crimson-script);
+            margin-bottom: 10px;
+            padding: 6px 12px;
+            background: rgba(138, 17, 24, 0.08);
+            border: 1px solid rgba(138, 17, 24, 0.25);
+            border-radius: 10px;
         }
 
         .otp-verify-box {
@@ -597,7 +586,7 @@
 <body>
 
 <div class="app-container">
-    <!-- Blur Modal Popup Backdrop (Scratch Card & Offer Status) -->
+    <!-- Blur Modal Popup Backdrop (Direct Coupon Display) -->
     <div class="modal-backdrop" id="modalBackdrop">
         <div class="popup-modal">
             <button class="popup-close-btn" onclick="closeModal()">
@@ -606,13 +595,9 @@
             <div id="modalStatusBadge" style="font-size: 11px; font-weight: 800; color: #17341E; letter-spacing: 0.8px; margin-bottom: 6px;">STALL OFFER UNLOCKED!</div>
             <div style="font-family: 'Cinzel', serif; font-size: 20px; font-weight: 700; color: #331B0E; margin-bottom: 4px;">Crumb Club</div>
             
-            <!-- Scratch Card Box -->
-            <div class="scratch-container" id="scratchWrapper">
-                <span class="scratch-code-text" id="modalCodeDisplay">-----</span>
-                <canvas id="scratchCanvas"></canvas>
-            </div>
+            <!-- Direct Coupon Code Box -->
+            <div class="direct-code-box" id="modalCodeDisplay">-----</div>
             
-            <div id="scratchHint" style="font-size: 11px; color: #8A1118; font-weight: 700; margin-bottom: 6px;">👆 Scratch above to reveal your coupon!</div>
             <div id="modalSubMessage" style="font-size: 12px; color: #331B0E; font-weight: 600; line-height: 1.4;">Show this unique 5-letter code at the stall for Buy 1 Get 1 Free!</div>
         </div>
     </div>
@@ -738,6 +723,9 @@
 
                 <!-- Invisible container for Firebase reCAPTCHA -->
                 <div id="recaptcha-container"></div>
+
+                <!-- Small Redeemed Text Above GET OTP Button -->
+                <div id="redeemedStatusText" class="redeemed-inline-msg">The offer is redeemed</div>
 
                 <button class="otp-btn" id="otpSubmitBtn" onclick="handleOtpFlow()">
                     <span id="btnLabel">GET OTP</span>
@@ -1106,6 +1094,10 @@
     }
 
     function resetOtpStep() {
+        // Hide redeemed inline notice whenever user edits the phone number
+        const redeemedNotice = document.getElementById('redeemedStatusText');
+        if (redeemedNotice) redeemedNotice.style.display = 'none';
+
         if (currentGeneratedOtp !== null || firebaseConfirmationResult !== null) {
             currentGeneratedOtp = null;
             firebaseConfirmationResult = null;
@@ -1115,79 +1107,6 @@
             document.getElementById('btnLabel').textContent = 'GET OTP';
             document.getElementById('otpHeading').textContent = 'Enter Your Mobile Number';
         }
-    }
-
-    function initScratchCard(isAlreadyRevealed) {
-        const canvas = document.getElementById('scratchCanvas');
-        const hint = document.getElementById('scratchHint');
-        const ctx = canvas.getContext('2d');
-        
-        canvas.style.opacity = '1';
-        canvas.style.pointerEvents = 'auto';
-
-        if (isAlreadyRevealed) {
-            canvas.style.display = 'none';
-            hint.style.display = 'none';
-            return;
-        }
-
-        canvas.style.display = 'block';
-        hint.style.display = 'block';
-        canvas.width = 240;
-        canvas.height = 75;
-
-        const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-        grad.addColorStop(0, '#D4A037');
-        grad.addColorStop(0.5, '#F5D782');
-        grad.addColorStop(1, '#C68E28');
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        ctx.fillStyle = '#331B0E';
-        ctx.font = 'bold 14px "Plus Jakarta Sans", sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('✨ SCRATCH HERE ✨', canvas.width / 2, canvas.height / 2);
-
-        let isDrawing = false;
-
-        function scratch(e) {
-            if (!isDrawing) return;
-            const rect = canvas.getBoundingClientRect();
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            const x = (clientX - rect.left) * (canvas.width / rect.width);
-            const y = (clientY - rect.top) * (canvas.height / rect.height);
-
-            ctx.globalCompositeOperation = 'destination-out';
-            ctx.beginPath();
-            ctx.arc(x, y, 18, 0, Math.PI * 2);
-            ctx.fill();
-
-            checkScratchPercentage();
-        }
-
-        function checkScratchPercentage() {
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            let transparentPixels = 0;
-            for (let i = 3; i < imageData.data.length; i += 4) {
-                if (imageData.data[i] === 0) transparentPixels++;
-            }
-            const percent = (transparentPixels / (canvas.width * canvas.height)) * 100;
-            if (percent > 42) {
-                canvas.style.opacity = '0';
-                canvas.style.pointerEvents = 'none';
-                hint.style.display = 'none';
-            }
-        }
-
-        canvas.onmousedown = (e) => { isDrawing = true; scratch(e); };
-        canvas.onmousemove = scratch;
-        window.onmouseup = () => { isDrawing = false; };
-
-        canvas.ontouchstart = (e) => { isDrawing = true; scratch(e); };
-        canvas.ontouchmove = (e) => { e.preventDefault(); scratch(e); };
-        canvas.ontouchend = () => { isDrawing = false; };
     }
 
     function openCouponPopup(item, isNew) {
@@ -1201,7 +1120,6 @@
         codeDisplay.style.color = '#8A1118';
         subMsg.textContent = 'Show this 5-letter code at the stall for Buy 1 Get 1 Free!';
 
-        initScratchCard(!isNew);
         document.getElementById('modalBackdrop').classList.add('active');
     }
 
@@ -1211,7 +1129,11 @@
     async function handleOtpFlow() {
         const input = document.getElementById('mobileInput');
         const btn = document.getElementById('otpSubmitBtn');
+        const redeemedNotice = document.getElementById('redeemedStatusText');
         const currentPhone = input.value.trim();
+
+        // Hide previous inline message before checking
+        redeemedNotice.style.display = 'none';
 
         if (!/^\d{10}$/.test(currentPhone)) {
             showToast('Please enter a valid 10-digit mobile number');
@@ -1225,21 +1147,14 @@
         if (claimed[currentPhone]) {
             const item = claimed[currentPhone];
 
-            // Permanently blocked if already redeemed by shopkeeper
+            // If redeemed in Admin Panel -> DO NOT open popup card; show small text above GET OTP
             if (item.redeemed) {
-                showToast('This offer was redeemed, this coupon was redeemed!');
-                document.getElementById('modalStatusBadge').textContent = 'COUPON ALREADY USED';
-                document.getElementById('modalStatusBadge').style.color = '#8A1118';
-                document.getElementById('modalCodeDisplay').textContent = 'REDEEMED';
-                document.getElementById('modalCodeDisplay').style.color = '#8A1118';
-                document.getElementById('scratchCanvas').style.display = 'none';
-                document.getElementById('scratchHint').style.display = 'none';
-                document.getElementById('modalSubMessage').textContent = 'This offer was redeemed, this coupon was redeemed.';
-                document.getElementById('modalBackdrop').classList.add('active');
+                redeemedNotice.textContent = 'The offer is redeemed';
+                redeemedNotice.style.display = 'block';
                 return;
             }
 
-            // Still Active -> Re-display their coupon anytime
+            // Still Active -> Re-display their coupon directly
             showToast('Active coupon found! Displaying your offer.');
             openCouponPopup(item, false);
             return;
@@ -1267,7 +1182,7 @@
 
                     document.getElementById('otpVerifySection').style.display = 'block';
                     document.getElementById('otpHeading').textContent = `Enter SMS OTP sent to +91 ${currentPhone}`;
-                    document.getElementById('btnLabel').textContent = 'VERIFY OTP & SCRATCH';
+                    document.getElementById('btnLabel').textContent = 'VERIFY OTP & GET COUPON';
                     showToast(`Real SMS OTP sent to +91 ${currentPhone}!`);
                 } catch (error) {
                     console.error('Firebase SMS Error:', error);
@@ -1278,11 +1193,11 @@
                     btn.disabled = false;
                 }
             } else {
-                // Instant Auto-OTP Mode (Works immediately without backend)
+                // Instant Auto-OTP Mode
                 currentGeneratedOtp = Math.floor(1000 + Math.random() * 9000).toString();
                 document.getElementById('otpVerifySection').style.display = 'block';
                 document.getElementById('otpHeading').textContent = `OTP Sent to +91 ${currentPhone}`;
-                document.getElementById('btnLabel').textContent = 'VERIFY OTP & SCRATCH';
+                document.getElementById('btnLabel').textContent = 'VERIFY OTP & GET COUPON';
 
                 showToast(`Auto OTP for ${currentPhone}: ${currentGeneratedOtp}`);
                 setTimeout(() => {
@@ -1309,7 +1224,7 @@
                 await firebaseConfirmationResult.confirm(enteredOtp);
             } catch (err) {
                 btn.disabled = false;
-                document.getElementById('btnLabel').textContent = 'VERIFY OTP & SCRATCH';
+                document.getElementById('btnLabel').textContent = 'VERIFY OTP & GET COUPON';
                 showToast('Invalid SMS OTP! Please try again.');
                 return;
             } finally {
@@ -1335,7 +1250,7 @@
         document.getElementById('btnLabel').textContent = 'GET OTP';
         document.getElementById('otpHeading').textContent = 'Enter Your Mobile Number';
 
-        showToast('OTP Verified! Scratch your card below.');
+        showToast('OTP Verified! Your coupon is ready.');
         openCouponPopup({ code: newCode, redeemed: false }, true);
     }
 </script>
