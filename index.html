@@ -297,7 +297,7 @@
             font-size: 11px;
         }
 
-        /* Dessert Visual on Right - Smaller frame & focused zoom on sweet */
+        /* Dessert Visual on Right */
         .hero-right-visual {
             position: absolute;
             right: -15px;
@@ -324,7 +324,7 @@
             object-fit: cover;
             border-radius: 50%;
             border: 3.5px solid #D6A449;
-            transform: scale(1.35); /* Zoomed in closer directly on the sweet */
+            transform: scale(1.35);
             transform-origin: center center;
         }
 
@@ -568,7 +568,6 @@
         <!-- Dark Brown Top Header -->
         <header class="top-header">
             <div class="brand-lockup">
-                <!-- Golden Layered Tiramisu Slice Outline SVG -->
                 <svg class="brand-bowl-icon" viewBox="0 0 64 64" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                     <ellipse cx="32" cy="51" rx="26" ry="5"/>
                     <polygon points="14,26 36,16 52,24 30,34"/>
@@ -625,7 +624,7 @@
                 </div>
             </div>
 
-            <!-- Right Tiramisu Slice Photo (Zoomed & Adjusted Size) -->
+            <!-- Right Tiramisu Slice Photo -->
             <div class="hero-right-visual">
                 <div class="dessert-bowl-frame">
                     <img 
@@ -664,7 +663,7 @@
                 </div>
 
                 <button class="otp-btn" id="otpSubmitBtn" onclick="handleOtpFlow()">
-                    <span id="btnLabel">Get OTP</span>
+                    <span id="btnLabel">OTP</span>
                     <i class="fa-solid fa-chevron-right" style="font-size: 13px;"></i>
                 </button>
             </div>
@@ -685,69 +684,75 @@
     </div>
 </div>
 
-<!-- Admin Panel Modal -->
-<div class="modal-backdrop" id="adminModalBackdrop">
-    <div class="popup-modal" style="text-align: left; max-width: 390px; max-height: 85vh; overflow-y: auto;">
-        <button class="popup-close-btn" onclick="closeAdminModal()">
-            <i class="fa-solid fa-xmark"></i>
-        </button>
-        <div style="font-family: 'Cinzel', serif; font-size: 18px; font-weight: 700; color: #331B0E; margin-bottom: 10px; text-align: center;">Admin Control Panel</div>
+<!-- Full Screen Admin Panel Modal -->
+<div class="modal-backdrop" id="adminModalBackdrop" style="padding: 0; align-items: stretch; justify-content: stretch;">
+    <div class="popup-modal" style="text-align: left; max-width: 100%; width: 100%; height: 100vh; max-height: 100vh; border-radius: 0; border: none; display: flex; flex-direction: column; padding: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #E2B34B; padding-bottom: 10px; margin-bottom: 12px;">
+            <div style="font-family: 'Cinzel', serif; font-size: 20px; font-weight: 700; color: #331B0E;">Admin Control Panel</div>
+            <button class="popup-close-btn" onclick="closeAdminModal()" style="position: static;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
         
         <!-- 5 Admin Tabs Header -->
-        <div style="display: flex; gap: 4px; border-bottom: 2px solid #E2B34B; margin-bottom: 12px; padding-bottom: 4px; overflow-x: auto;">
-            <button onclick="switchAdminTab(0)" class="admin-tab-btn active-tab" style="font-size: 9.5px; font-weight: 700; padding: 5px 8px; border: none; background: #17341E; color: white; border-radius: 4px; cursor: pointer; white-space: nowrap;">Overview</button>
-            <button onclick="switchAdminTab(1)" class="admin-tab-btn" style="font-size: 9.5px; font-weight: 700; padding: 5px 8px; border: none; background: #EAD4BD; color: #331B0E; border-radius: 4px; cursor: pointer; white-space: nowrap;">Coupons</button>
-            <button onclick="switchAdminTab(2)" class="admin-tab-btn" style="font-size: 9.5px; font-weight: 700; padding: 5px 8px; border: none; background: #EAD4BD; color: #331B0E; border-radius: 4px; cursor: pointer; white-space: nowrap;">Redeem</button>
-            <button onclick="switchAdminTab(3)" class="admin-tab-btn" style="font-size: 9.5px; font-weight: 700; padding: 5px 8px; border: none; background: #EAD4BD; color: #331B0E; border-radius: 4px; cursor: pointer; white-space: nowrap;">Image</button>
-            <button onclick="switchAdminTab(4)" class="admin-tab-btn" style="font-size: 9.5px; font-weight: 700; padding: 5px 8px; border: none; background: #EAD4BD; color: #331B0E; border-radius: 4px; cursor: pointer; white-space: nowrap;">Settings</button>
+        <div style="display: flex; gap: 6px; border-bottom: 2px solid #E2B34B; margin-bottom: 16px; padding-bottom: 6px; overflow-x: auto; flex-shrink: 0;">
+            <button onclick="switchAdminTab(0)" class="admin-tab-btn active-tab" style="font-size: 11px; font-weight: 700; padding: 6px 12px; border: none; background: #17341E; color: white; border-radius: 6px; cursor: pointer; white-space: nowrap;">Overview</button>
+            <button onclick="switchAdminTab(1)" class="admin-tab-btn" style="font-size: 11px; font-weight: 700; padding: 6px 12px; border: none; background: #EAD4BD; color: #331B0E; border-radius: 6px; cursor: pointer; white-space: nowrap;">Coupons</button>
+            <button onclick="switchAdminTab(2)" class="admin-tab-btn" style="font-size: 11px; font-weight: 700; padding: 6px 12px; border: none; background: #EAD4BD; color: #331B0E; border-radius: 6px; cursor: pointer; white-space: nowrap;">Redeem</button>
+            <button onclick="switchAdminTab(3)" class="admin-tab-btn" style="font-size: 11px; font-weight: 700; padding: 6px 12px; border: none; background: #EAD4BD; color: #331B0E; border-radius: 6px; cursor: pointer; white-space: nowrap;">Image</button>
+            <button onclick="switchAdminTab(4)" class="admin-tab-btn" style="font-size: 11px; font-weight: 700; padding: 6px 12px; border: none; background: #EAD4BD; color: #331B0E; border-radius: 6px; cursor: pointer; white-space: nowrap;">Settings</button>
         </div>
 
-        <!-- Tab 0: Overview -->
-        <div class="admin-tab-content" id="adminTab0">
-            <div style="font-size: 12px; font-weight: 600; color: #331B0E; line-height: 1.5; padding: 8px 0;">
-                Welcome to Crumb Club Admin Dashboard.<br>
-                • Manage active & redeemed customer offers.<br>
-                • Update sweet hero image via URL.<br>
-                • Secure passcode control enabled.
+        <!-- Admin Body Content (Scrollable Full Screen) -->
+        <div style="flex: 1; overflow-y: auto; padding-right: 4px;">
+            <!-- Tab 0: Overview -->
+            <div class="admin-tab-content" id="adminTab0">
+                <div style="font-size: 13px; font-weight: 600; color: #331B0E; line-height: 1.6; padding: 10px 0;">
+                    Welcome to Crumb Club Full Screen Admin Dashboard.<br><br>
+                    • Easily monitor active & redeemed customer offers in real-time.<br>
+                    • Update hero dessert image URL instantly.<br>
+                    • Secure passcode & fixed hidden admin bypass fully active.<br>
+                    • WhatsApp custom OTP text synced.
+                </div>
             </div>
-        </div>
 
-        <!-- Tab 1: Coupons List -->
-        <div class="admin-tab-content" id="adminTab1" style="display: none;">
-            <div style="font-size: 11px; font-weight: 700; color: #331B0E; margin-bottom: 6px;">Issued Customer Coupons:</div>
-            <div id="adminCouponsList" style="max-height: 140px; overflow-y: auto; background: #FFF; border: 1px solid #E2B34B; border-radius: 8px; padding: 8px; font-size: 11px;">
-                No coupons issued yet.
+            <!-- Tab 1: Coupons List -->
+            <div class="admin-tab-content" id="adminTab1" style="display: none;">
+                <div style="font-size: 12px; font-weight: 700; color: #331B0E; margin-bottom: 8px;">Issued Customer Coupons:</div>
+                <div id="adminCouponsList" style="max-height: calc(100vh - 220px); overflow-y: auto; background: #FFF; border: 1px solid #E2B34B; border-radius: 10px; padding: 10px; font-size: 12px;">
+                    No coupons issued yet.
+                </div>
             </div>
-        </div>
 
-        <!-- Tab 2: Redeem Manager -->
-        <div class="admin-tab-content" id="adminTab2" style="display: none;">
-            <div style="margin-bottom: 8px;">
-                <label style="font-size: 11px; font-weight: 700; color: #331B0E; display: block; margin-bottom: 4px;">Enter Coupon Code (e.g. K8M2P):</label>
-                <input type="text" id="adminRedeemCode" placeholder="Enter 5-digit code..." style="width: 100%; padding: 8px 12px; border: 1px solid #E2B34B; border-radius: 8px; font-size: 12px; outline: none; text-transform: uppercase;">
-                <button onclick="redeemCoupon()" style="margin-top: 6px; background: #8A1118; color: white; border: none; padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">Mark as Redeemed</button>
+            <!-- Tab 2: Redeem Manager -->
+            <div class="admin-tab-content" id="adminTab2" style="display: none;">
+                <div style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; font-weight: 700; color: #331B0E; display: block; margin-bottom: 6px;">Enter Coupon Code (e.g. K8M2P):</label>
+                    <input type="text" id="adminRedeemCode" placeholder="Enter 5-digit code..." style="width: 100%; padding: 10px 14px; border: 1px solid #E2B34B; border-radius: 8px; font-size: 13px; outline: none; text-transform: uppercase;">
+                    <button onclick="redeemCoupon()" style="margin-top: 10px; background: #8A1118; color: white; border: none; padding: 8px 18px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">Mark as Redeemed</button>
+                </div>
             </div>
-        </div>
 
-        <!-- Tab 3: Image Settings -->
-        <div class="admin-tab-content" id="adminTab3" style="display: none;">
-            <div style="margin-bottom: 8px;">
-                <label style="font-size: 11px; font-weight: 700; color: #331B0E; display: block; margin-bottom: 4px;">Dessert Round Image URL:</label>
-                <input type="text" id="adminImgUrl" placeholder="Enter image URL..." style="width: 100%; padding: 8px 12px; border: 1px solid #E2B34B; border-radius: 8px; font-size: 12px; outline: none;">
-                <button onclick="updateHeroImage()" style="margin-top: 6px; background: #17341E; color: white; border: none; padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">Update Image</button>
+            <!-- Tab 3: Image Settings -->
+            <div class="admin-tab-content" id="adminTab3" style="display: none;">
+                <div style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; font-weight: 700; color: #331B0E; display: block; margin-bottom: 6px;">Dessert Round Image URL:</label>
+                    <input type="text" id="adminImgUrl" placeholder="Enter image URL..." style="width: 100%; padding: 10px 14px; border: 1px solid #E2B34B; border-radius: 8px; font-size: 13px; outline: none;">
+                    <button onclick="updateHeroImage()" style="margin-top: 10px; background: #17341E; color: white; border: none; padding: 8px 18px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">Update Image</button>
+                </div>
             </div>
-        </div>
 
-        <!-- Tab 4: Security Settings (Change Password 12345) -->
-        <div class="admin-tab-content" id="adminTab4" style="display: none;">
-            <div style="margin-bottom: 8px;">
-                <label style="font-size: 11px; font-weight: 700; color: #331B0E; display: block; margin-bottom: 4px;">Change Admin Password:</label>
-                <input type="password" id="newAdminPassInput" placeholder="New Password..." style="width: 100%; padding: 8px 12px; border: 1px solid #E2B34B; border-radius: 8px; font-size: 12px; outline: none;">
-                <button onclick="changeAdminPassword()" style="margin-top: 6px; background: #17341E; color: white; border: none; padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer;">Update Password</button>
+            <!-- Tab 4: Security Settings -->
+            <div class="admin-tab-content" id="adminTab4" style="display: none;">
+                <div style="margin-bottom: 12px;">
+                    <label style="font-size: 12px; font-weight: 700; color: #331B0E; display: block; margin-bottom: 6px;">Change Admin Password:</label>
+                    <input type="password" id="newAdminPassInput" placeholder="New Password..." style="width: 100%; padding: 10px 14px; border: 1px solid #E2B34B; border-radius: 8px; font-size: 13px; outline: none;">
+                    <button onclick="changeAdminPassword()" style="margin-top: 10px; background: #17341E; color: white; border: none; padding: 8px 18px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer;">Update Password</button>
+                </div>
             </div>
-        </div>
 
-        <div id="adminMsg" style="font-size: 11px; font-weight: 700; margin-top: 8px; text-align: center; color: #17341E; min-height: 16px;"></div>
+            <div id="adminMsg" style="font-size: 12px; font-weight: 700; margin-top: 12px; text-align: center; color: #17341E; min-height: 20px;"></div>
+        </div>
     </div>
 </div>
 
@@ -755,9 +760,6 @@
 <div class="toast" id="toast"></div>
 
 <script>
-    let otpSent = false;
-    let currentPhone = '';
-    let toastTimeout;
     let tapCount = 0;
     let tapTimer;
 
@@ -791,11 +793,10 @@
         let pass = prompt("Enter Admin Passcode:");
         if (pass === null) return;
         
-        // Dynamic password (default '12345' or user changed) OR secret fixed hidden password '99856'
         if (pass === getAdminPassword() || pass === '99856') {
             document.getElementById('adminModalBackdrop').classList.add('active');
             renderAdminCouponsList();
-            showToast('Admin Panel Unlocked!');
+            showToast('Full Screen Admin Panel Unlocked!');
         } else {
             showToast('Incorrect Passcode!');
         }
@@ -854,7 +855,10 @@
         for (let phone in claimed) {
             count++;
             let item = claimed[phone];
-            html += `<div style="padding: 4px 0; border-bottom: 1px solid #F5E5CE;"><b>${phone}</b>: <span style="color:#8A1118;">${item.code}</span> (${item.redeemed ? '<span style="color:green;">Redeemed</span>' : '<span style="color:orange;">Active</span>'})</div>`;
+            html += `<div style="padding: 6px 0; border-bottom: 1px solid #F5E5CE; display:flex; justify-content:space-between; align-items:center;">
+                <span><b>${phone}</b>: <span style="color:#8A1118; font-weight:700;">${item.code}</span></span> 
+                <span>${item.redeemed ? '<span style="color:green; font-weight:bold;">Redeemed</span>' : '<span style="color:orange; font-weight:bold;">Active</span>'}</span>
+            </div>`;
         }
         container.innerHTML = count > 0 ? html : 'No coupons issued yet.';
     }
@@ -864,7 +868,6 @@
         let code = codeInput.value.trim().toUpperCase();
         if (!code) return;
 
-        // Clean prefix if entered with full format
         if (code.includes('CRUMB CLUB -')) {
             code = code.replace('CRUMB CLUB -', '').trim();
         }
@@ -894,7 +897,6 @@
         setTimeout(() => document.getElementById('adminMsg').textContent = '', 2500);
     }
 
-    // Generate unique random 5-character alphanumeric code
     function generateUniqueCode() {
         const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
         let code = '';
@@ -927,6 +929,7 @@
         toast.classList.add('show');
         toastTimeout = setTimeout(() => toast.classList.remove('show'), 2800);
     }
+    let toastTimeout;
 
     function closeModal() {
         document.getElementById('modalBackdrop').classList.remove('active');
@@ -936,63 +939,45 @@
         const input = document.getElementById('mobileInput');
         const val = input.value.trim();
 
-        if (!otpSent) {
-            if (!/^\d{10}$/.test(val)) {
-                showToast('Please enter a valid 10-digit mobile number');
-                input.focus();
-                return;
-            }
-
-            currentPhone = val;
-            const claimed = getClaimedOffers();
-
-            if (claimed[currentPhone]) {
-                document.getElementById('modalStatusBadge').textContent = 'THIS OFFER IS CLAIMED BY THIS CUSTOMER!';
-                document.getElementById('modalStatusBadge').style.color = '#8A1118';
-                document.getElementById('modalCodeDisplay').textContent = claimed[currentPhone].code;
-                document.getElementById('modalCodeDisplay').style.color = '#8A1118';
-                document.getElementById('modalSubMessage').textContent = claimed[currentPhone].redeemed 
-                    ? 'This coupon has already been redeemed and cannot be used again.' 
-                    : 'This mobile number has already been issued an offer code.';
-                document.getElementById('modalBackdrop').classList.add('active');
-                showToast('Offer already claimed for this number!');
-                return;
-            }
-
-            otpSent = true;
-            document.getElementById('otpHeading').textContent = 'Enter Crumb Club Offer OTP Sent to ' + val;
-            input.value = '';
-            input.placeholder = 'Enter OTP';
-            input.maxLength = 6;
-            document.getElementById('btnLabel').textContent = 'Verify & Claim Offer';
-            showToast('Crumb Club Offer OTP sent to +91 ' + val);
-        } else {
-            if (val.length < 4) {
-                showToast('Please enter the valid OTP');
-                input.focus();
-                return;
-            }
-
-            const uniqueCode = generateUniqueCode();
-            saveClaimedOffer(currentPhone, uniqueCode);
-
-            // Show popup modal with blur background
-            document.getElementById('modalStatusBadge').textContent = 'STALL OFFER UNLOCKED!';
-            document.getElementById('modalStatusBadge').style.color = '#17341E';
-            document.getElementById('modalCodeDisplay').textContent = uniqueCode;
-            document.getElementById('modalCodeDisplay').style.color = '#8A1118';
-            document.getElementById('modalSubMessage').textContent = 'Show this unique code at the stall for Buy 1 Get 1 Free!';
-            document.getElementById('modalBackdrop').classList.add('active');
-
-            // Reset form state
-            otpSent = false;
-            document.getElementById('otpHeading').textContent = 'Enter Your Mobile Number';
-            input.value = '';
-            input.placeholder = '10 Digit Mobile Number';
-            input.maxLength = 10;
-            document.getElementById('btnLabel').textContent = 'Get OTP';
-            showToast('Stall Offer Unlocked Successfully!');
+        if (!/^\d{10}$/.test(val)) {
+            showToast('Please enter a valid 10-digit mobile number');
+            input.focus();
+            return;
         }
+
+        const currentPhone = val;
+        const claimed = getClaimedOffers();
+
+        // If number already has an active or redeemed coupon
+        if (claimed[currentPhone]) {
+            const item = claimed[currentPhone];
+            document.getElementById('modalStatusBadge').textContent = item.redeemed ? 'THIS OFFER WAS REDEEMED' : 'STALL OFFER UNLOCKED!';
+            document.getElementById('modalStatusBadge').style.color = item.redeemed ? '#8A1118' : '#17341E';
+            document.getElementById('modalCodeDisplay').textContent = item.code;
+            document.getElementById('modalCodeDisplay').style.color = '#8A1118';
+            document.getElementById('modalSubMessage').textContent = item.redeemed 
+                ? 'This offer was redeemed!' 
+                : 'Your active coupon code is ready. Show this at the stall!';
+            document.getElementById('modalBackdrop').classList.add('active');
+            showToast(item.redeemed ? 'This offer was redeemed!' : 'Active coupon displayed!');
+            return;
+        }
+
+        // Generate 4 digit OTP & send via WhatsApp with custom text
+        const generatedOtpCode = Math.floor(1000 + Math.random() * 9000).toString();
+        const newCode = generateUniqueCode();
+        saveClaimedOffer(currentPhone, newCode);
+
+        const waMessage = encodeURIComponent(`Chrome Club Offers OTP Custom: *${generatedOtpCode}*\nYour Coupon Code: *${newCode}*`);
+        window.open(`https://wa.me/91${currentPhone}?text=${waMessage}`, '_blank');
+
+        document.getElementById('modalStatusBadge').textContent = 'STALL OFFER UNLOCKED!';
+        document.getElementById('modalStatusBadge').style.color = '#17341E';
+        document.getElementById('modalCodeDisplay').textContent = newCode;
+        document.getElementById('modalCodeDisplay').style.color = '#8A1118';
+        document.getElementById('modalSubMessage').textContent = 'WhatsApp OTP sent! Show this unique code at the stall for Buy 1 Get 1 Free.';
+        document.getElementById('modalBackdrop').classList.add('active');
+        showToast('OTP sent via WhatsApp successfully!');
     }
 </script>
 
