@@ -841,21 +841,27 @@
 <div class="toast" id="toast"></div>
 
 <script>
-    // ==========================================
-    // 1. OPTIONAL DIRECT FIREBASE CONFIG
-    // ==========================================
-    // You can either paste your Firebase config below OR set it inside Admin -> Settings
-    const DEFAULT_FIREBASE_CONFIG = null; 
-    /* Example:
-    const DEFAULT_FIREBASE_CONFIG = {
-        apiKey: "AIzaSy...",
-        authDomain: "crumb-club.firebaseapp.com",
-        projectId: "crumb-club",
-        storageBucket: "crumb-club.appspot.com",
-        messagingSenderId: "123456789",
-        appId: "1:123456789:web:abcdef"
+    // =========================================================================
+    // మీ సెట్టింగ్స్ అన్నీ ఇక్కడే ఒకే దగ్గర మార్చుకోండి (ALL SETTINGS IN ONE PLACE)
+    // =========================================================================
+    const APP_CONFIG = {
+        // 1. అడ్మిన్ పాస్‌వర్డ్ (Admin Panel PIN)
+        adminPassword: "12345",
+
+        // 2. ఫైర్‌బేస్ వివరాలు (మీ Firebase Console నుండి కాపీ చేసి ఇక్కడ పేస్ట్ చేయండి)
+        firebase: {
+            apiKey: "AIzaSyDz__szij8Dd_7Cbq1YNeCmn0475igcPr8",             // ఉదా: "AIzaSyD-..."
+            authDomain: "offers-e04ec.firebaseapp.com",         // ఉదా: "crumb-club.firebaseapp.com"
+            projectId: "offers-e04ec",          // ఉదా: "crumb-club"
+            storageBucket: "offers-e04ec.firebasestorage.app",      // ఉదా: "crumb-club.appspot.com"
+            messagingSenderId: "189350105823",  // ఉదా: "1234567890"
+            appId: "1:189350105823:web:6dabc8b847006bd2c68f6a"               // ఉదా: "1:1234567890:web:abcdef"
+        },
+
+        // 3. భవిష్యత్తులో వాడుకోవడానికి Fast2SMS API Key
+        fast2smsApiKey: ""
     };
-    */
+    // =========================================================================
 
     let firebaseConfirmationResult = null;
     let recaptchaVerifierInstance = null;
@@ -888,8 +894,8 @@
     function initFirebaseIfAvailable() {
         try {
             const savedConfigStr = localStorage.getItem('crumbClubFirebaseConfig');
-            const config = savedConfigStr ? JSON.parse(savedConfigStr) : DEFAULT_FIREBASE_CONFIG;
-            if (config && config.apiKey && window.firebase) {
+            const config = savedConfigStr ? JSON.parse(savedConfigStr) : APP_CONFIG.firebase;
+            if (config && config.apiKey && config.apiKey.trim() !== "" && window.firebase) {
                 if (!firebase.apps.length) {
                     firebase.initializeApp(config);
                 }
@@ -916,7 +922,7 @@
     });
 
     function getAdminPassword() {
-        return localStorage.getItem('crumbClubAdminPass') || '12345';
+        return localStorage.getItem('crumbClubAdminPass') || APP_CONFIG.adminPassword;
     }
 
     function promptAdminLogin() {
